@@ -18,7 +18,7 @@ class HandTrackerThread(QThread):
         self.running = True
         self.model = None
         self.cap = None
-        self.labels_dict = {0: 'palm', 1: 'fist'}
+        self.labels_dict = {0: 'palm', 1: 'fist'} # TODO поменять
         self.last_gesture = 0  # 0: fist, 1: palm
         self.FPS = 30 # TODO не реализовано
 

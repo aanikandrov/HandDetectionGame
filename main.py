@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
                              QMainWindow, QLabel)
 from HandTrackerThread import HandTrackerThread
-from HandTrackerWindow import HandCursorWidget
+from HandCursorWidget import HandCursorWidget
 
 # TODO вынести модель внешне
 
