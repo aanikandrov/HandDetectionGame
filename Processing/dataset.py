@@ -12,7 +12,7 @@ hands = mp_hands.Hands(
     min_tracking_confidence=0.5
 )
 
-DATA_DIR = './data'
+DATA_DIR = 'data'
 
 data = []
 labels = []

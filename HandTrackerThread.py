@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
-import sys
-from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
-                             QMainWindow, QLabel, QVBoxLayout)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPixmap, QBrush
+from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtGui import QImage
+
+import time # для FPS
+
 
 
 
@@ -20,6 +20,7 @@ class HandTrackerThread(QThread):
         self.cap = None
         self.labels_dict = {0: 'palm', 1: 'fist'}
         self.last_gesture = 0  # 0: fist, 1: palm
+        self.FPS = 30 # TODO не реализовано
 
     def init_camera(self):
         self.cap = cv2.VideoCapture(0)
@@ -32,7 +33,7 @@ class HandTrackerThread(QThread):
     def load_model(self):
         try:
             import pickle
-            model_dict = pickle.load(open('./model.p', 'rb'))
+            model_dict = pickle.load(open('Model/model.p', 'rb'))
             self.model = model_dict['model']
             print("Model loaded successfully.")
             return True
@@ -54,7 +55,12 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5
         )
 
+        frame_time = 1.0 / self.FPS
+
         while self.running:
+
+            start_time = time.time()
+
             ret, frame = self.cap.read()
             frame = cv2.flip(frame, 1)
             if not ret:
@@ -68,15 +74,14 @@ class HandTrackerThread(QThread):
                 self.landmarks_detected.emit(True)
                 hand_landmarks = results.multi_hand_landmarks[0]
 
-                # Calculate palm center (landmark 9)
+                # Центр руки
                 cx = int(hand_landmarks.landmark[9].x * W)
                 cy = int(hand_landmarks.landmark[9].y * H)
 
-                # Normalize position for cursor widget
+                # Нормализация позиции курсора
                 norm_x = cx / W
                 norm_y = cy / H
 
-                # Process landmarks for gesture recognition
                 x_ = [lm.x for lm in hand_landmarks.landmark]
                 y_ = [lm.y for lm in hand_landmarks.landmark]
 
@@ -92,7 +97,7 @@ class HandTrackerThread(QThread):
                         data_aux.append(lm.x)
                         data_aux.append(lm.y)
 
-                # Predict gesture
+                # Предсказание жеста
                 try:
                     if len(data_aux) == 42:
                         prediction = self.model.predict([np.asarray(data_aux)])
@@ -102,7 +107,6 @@ class HandTrackerThread(QThread):
                     print(f"Prediction error: {e}")
                     gesture = self.last_gesture
 
-                # Emit position and gesture
                 self.position_updated.emit(norm_x, norm_y, gesture)
 
                 circle_color = (0, 0, 255) if gesture == 0 else (0, 255, 0)  # red/green
@@ -111,13 +115,13 @@ class HandTrackerThread(QThread):
             else:
                 self.landmarks_detected.emit(False)
 
-            # Convert to QImage and emit
             h, w, ch = frame.shape
             bytes_per_line = ch * w
             qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_BGR888)
             self.frame_updated.emit(qt_image)
 
-        # Cleanup
+
+        # Очистка
         if self.cap:
             self.cap.release()
 

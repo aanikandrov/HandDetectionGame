@@ -8,7 +8,7 @@ import cv2
 # TODO зеркальное отображение как опция
 
 
-DATA_DIR = './data'
+DATA_DIR = 'data'
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 

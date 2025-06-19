@@ -1,12 +1,6 @@
-import cv2
-import numpy as np
-import sys
-from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
-                             QMainWindow, QLabel, QVBoxLayout)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPixmap, QBrush
-
-from HandTrackerThread import HandTrackerThread
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtGui import QPainter, QColor, QPen, QBrush
+from PyQt5.QtWidgets import (QWidget)
 
 
 class HandCursorWidget(QWidget):
@@ -15,17 +9,20 @@ class HandCursorWidget(QWidget):
         self.setWindowTitle("Hand Cursor Controller")
         self.setStyleSheet("background-color: #f0f0f0; border: 2px solid #404040;")
         self.setMinimumSize(400, 400)
-        self.cursor_pos = [0.5, 0.5]  # Normalized position (center)
+        self.cursor_pos = [0.5, 0.5]
         self.hand_detected = False
         self.gesture = 0  # 0: fist, 1: palm
-        self.trail_positions = []
-        self.trail_colors = []
 
-        self.square_size = 100  # Размер квадрата
-        self.square_x = 100  # Начальная позиция X
-        self.square_y = 100  # Начальная позиция Y
-        self.dragging = False  # Флаг перетаскивания
-        self.cursor_over_square = False  # Курсор над квадратом
+        self.trail_positions = []       # Позиции для следа
+        self.trail_colors = []          # Цвет следа
+        self.is_trail = True            # Флаг следа
+        self.trail_max_length = 20      # Максимальная длина следа
+
+        self.square_size = 100          # Размер квадрата
+        self.square_x = 100             # Начальная позиция X
+        self.square_y = 100             # Начальная позиция Y
+        self.dragging = False           # Флаг перетаскивания
+        self.cursor_over_square = False # Курсор над квадратом
 
     def update_cursor_position(self, x, y, gesture):
         # Абсолютные координаты курсора
@@ -39,28 +36,32 @@ class HandCursorWidget(QWidget):
         )
 
         # Логика перетаскивания
-        if self.dragging and gesture == 1:  # Перетаскивание (кулак)
-            # Обновляем позицию квадрата
-            self.square_x = abs_x - self.square_size // 2
-            self.square_y = abs_y - self.square_size // 2
-        elif self.cursor_over_square and gesture == 0:  # Захват
-            self.dragging = True
-        elif gesture == 1:  # Отпускание
+        if gesture == 1:  # Кулак (зажатие)
+            if self.dragging:
+                # Продолжаем перетаскивание
+                self.square_x = abs_x - self.square_size // 2
+                self.square_y = abs_y - self.square_size // 2
+            elif self.cursor_over_square:
+                # Начинаем перетаскивание только если курсор над квадратом
+                self.dragging = True
+                # Центрируем квадрат относительно курсора
+                self.square_x = abs_x - self.square_size // 2
+                self.square_y = abs_y - self.square_size // 2
+        else:  # Ладонь (разжатие)
             self.dragging = False
 
         self.cursor_pos = [x, y]
         self.gesture = gesture
         self.hand_detected = True
 
-        # Save position for trail with color based on gesture
-        color = QColor(255, 0, 0) if gesture == 0 else QColor(0, 255, 0)
-        self.trail_positions.append((x * self.width(), y * self.height()))
-        self.trail_colors.append(color)
+        if self.is_trail:
+            color = QColor(255, 0, 0) if gesture == 0 else QColor(0, 255, 0)
+            self.trail_positions.append((x * self.width(), y * self.height()))
+            self.trail_colors.append(color)
 
-        # Limit trail length
-        if len(self.trail_positions) > 20:
-            self.trail_positions.pop(0)
-            self.trail_colors.pop(0)
+            if len(self.trail_positions) > self.trail_max_length:
+                self.trail_positions.pop(0)
+                self.trail_colors.pop(0)
 
         self.update()
 
@@ -72,12 +73,11 @@ class HandCursorWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Draw border
         painter.setPen(QPen(QColor(100, 100, 100), 2))
         painter.drawRect(self.rect().adjusted(1, 1, -1, -1))
 
-        # Draw trail
-        if len(self.trail_positions) > 1:
+        # Отрисовка следа
+        if self.is_trail and len(self.trail_positions) > 1:
             for i in range(1, len(self.trail_positions)):
                 pen = QPen(self.trail_colors[i], 2)
                 painter.setPen(pen)
