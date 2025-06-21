@@ -1,3 +1,5 @@
+import os
+
 import cv2
 import pickle
 import numpy as np
@@ -39,7 +41,10 @@ class HandTrackerThread(QThread):
     def load_model(self):
         """ Загрузка модели классификации из файла"""
         try:
-            model_dict = pickle.load(open('Model/model.p', 'rb'))
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            model_path = os.path.join(current_dir, 'Model', 'model.p')
+
+            model_dict = pickle.load(open(model_path, 'rb'))
             self.model = model_dict['model']
             print("Model loaded successfully.")
             return True

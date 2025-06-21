@@ -180,8 +180,10 @@ def train_model():
     print(f'Точность модели: {score * 100:.2f}%')
 
     # Сохранение обученной модели
-    model_path = '../Model/model.p'
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    model_dir = os.path.join(os.path.dirname(__file__), '..', 'Model')
+    os.makedirs(model_dir, exist_ok=True)
+
+    model_path = os.path.join(model_dir, 'model.p')
 
     with open(model_path, 'wb') as f:
         pickle.dump({'model': model}, f)
@@ -191,7 +193,10 @@ def train_model():
 def test_model():
     """ Тестирование модели в реальном времени с помощью камеры """
     # Загрузка обученной модели
-    model_dict = pickle.load(open('../Model/model.p', 'rb'))
+    model_dir = os.path.join(os.path.dirname(__file__), '..', 'Model')
+    model_path = os.path.join(model_dir, 'model.p')
+
+    model_dict = pickle.load(open(model_path, 'rb'))
     model = model_dict['model']
 
     cap = cv2.VideoCapture(0)
