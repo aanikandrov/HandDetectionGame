@@ -86,11 +86,13 @@ class HandCursorWidget(QWidget):
         self.squares[2].x, self.squares[2].y = self.initial_positions['beetle']
         self.orange_circle.x, self.orange_circle.y = self.initial_positions['circle']
         self.beetle2.x, self.beetle2.y = self.initial_positions['beetle2']
+        self.orange_circle.reset_texture()
 
         # Сброс состояния
         self.end_game = False
         self.game_end = False
         self.dragging_square = None
+
 
         # Сброс следа курсора
         self.trail_positions = []
@@ -361,17 +363,18 @@ class HandCursorWidget(QWidget):
         self.end_game = True
         self.game_paused = True
         self.game_ended.emit()
+
+        # Устанавливаем текстуру взрыва
+        self.orange_circle.set_explosion()
         self.update()
 
         # Остановка таймера
         if self.game_timer.isActive():
             self.game_timer.stop()
 
-        # Остановка предыдущего таймера завершения
         if hasattr(self, 'end_game_timer') and self.end_game_timer:
             self.end_game_timer.stop()
 
-        # Запуск таймера перезапуска (3 секунды)
         self.end_game_timer = QTimer(self)
         self.end_game_timer.setSingleShot(True)
         self.end_game_timer.timeout.connect(self.restart_requested.emit)

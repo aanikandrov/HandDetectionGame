@@ -4,42 +4,46 @@ import os
 
 from Objects.GameObject import GameObject
 
-
 class StaticCircle(GameObject):
     """ Класс статичного круга (цели)"""
+
     def __init__(self, x, y, radius, color):
         super().__init__(x, y, color)
         self.radius = radius
+        self.default_texture = 'Images/pix-earth.png'
+        self.load_texture(self.default_texture)
 
-
-        texture_path = os.path.join('Images\pix-earth.png')
-
-        # Загружаем текстуру с проверкой
+    def load_texture(self, texture_path):
+        """ Загрузка или смена текстуры """
         self.texture = QPixmap()
         if not self.texture.load(texture_path):
             print(f"Error loading texture: {texture_path}")
-            # Создаем цветной круг если текстура не загрузилась
             self.texture = None
         else:
-            # Масштабируем изображение под размер круга
             self.texture = self.texture.scaled(
-                2 * radius,
-                2 * radius,
+                2 * self.radius,
+                2 * self.radius,
                 Qt.IgnoreAspectRatio,
                 Qt.SmoothTransformation
             )
 
+    def set_explosion(self):
+        """ Установка текстуры взрыва """
+        self.load_texture('Images/pix-explosion.png')
+
+    def reset_texture(self):
+        """ Восстановление исходной текстуры """
+        self.load_texture(self.default_texture)
+
     def draw(self, painter):
         """ Отрисовка фигуры """
         if self.texture:
-            # Рисуем изображение в прямоугольнике, ограничивающем круг
             painter.drawPixmap(
                 int(self.x - self.radius),
                 int(self.y - self.radius),
                 self.texture
             )
         else:
-            # Рисуем цветной круг если текстура не загрузилась
             painter.setBrush(QBrush(self.color))
             painter.drawEllipse(
                 QPointF(self.x, self.y),

@@ -229,19 +229,10 @@ class MainWindow(QMainWindow):
         self.cursor_widget.restart_requested.connect(self.restart_game)
         self.cursor_widget.game_ended.connect(self.on_game_ended)
 
-        # control_layout.addWidget(self.start_pause_button)
-        # control_layout.addWidget(self.restart_button)
-        # control_layout.addWidget(self.timer_label)
-        # control_layout.addWidget(speed_label)
-        # control_layout.addWidget(self.speed_spinbox)
-        # control_layout.addWidget(self.best_time_label_text)
-        # control_layout.addWidget(self.best_time_label_value)
-        # control_layout.addWidget(self.rules_button)
-        # control_layout.addWidget(self.processing_button)
-        # right_layout.addWidget(control_panel)
-        # right_layout.addWidget(self.camera_widget)
-        # content_layout.addWidget(right_column, alignment=Qt.AlignTop)
-        # main_vertical_layout.addLayout(content_layout)
+        # Таймер для увеличения скорости
+        self.speed_increase_timer = QTimer(self)
+        self.speed_increase_timer.setInterval(5000)  # 5 секунд
+        self.speed_increase_timer.timeout.connect(self.increase_beetle_speed)
 
         # Загрузка лучшего времени из файла
         self.load_best_time()
