@@ -6,6 +6,7 @@ from Objects.GameObject import GameObject
 
 
 class StaticCircle(GameObject):
+    """ Класс статичного круга (цели)"""
     def __init__(self, x, y, radius, color):
         super().__init__(x, y, color)
         self.radius = radius
@@ -24,11 +25,12 @@ class StaticCircle(GameObject):
             self.texture = self.texture.scaled(
                 2 * radius,
                 2 * radius,
-                Qt.IgnoreAspectRatio,  # Заполняем полностью без сохранения пропорций
+                Qt.IgnoreAspectRatio,
                 Qt.SmoothTransformation
             )
 
     def draw(self, painter):
+        """ Отрисовка фигуры """
         if self.texture:
             # Рисуем изображение в прямоугольнике, ограничивающем круг
             painter.drawPixmap(
