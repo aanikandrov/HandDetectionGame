@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
 
         # Виджет курсора (игровое поле)
         self.cursor_widget = HandCursorWidget()
-        self.cursor_widget.setFixedSize(500, 500)
+        self.cursor_widget.setFixedSize(800, 800)
         content_layout.addWidget(self.cursor_widget)
 
         self.active_seconds = 0
@@ -170,6 +170,7 @@ class MainWindow(QMainWindow):
 
         # Сброс скорости жука
         self.cursor_widget.beetle.speed = 1
+        self.cursor_widget.beetle2.speed = 1
         self.speed_spinbox.setValue(1)
 
     def enable_start_button(self, model_loaded):
@@ -185,6 +186,7 @@ class MainWindow(QMainWindow):
             if current_speed < 10:
                 new_speed = current_speed + 1
                 self.cursor_widget.beetle.speed = new_speed
+                self.cursor_widget.beetle2.speed = new_speed
                 self.speed_spinbox.setValue(new_speed)
 
     def update_cursor_position_from_tracker(self, x, y, gesture):
@@ -193,6 +195,7 @@ class MainWindow(QMainWindow):
 
     def update_beetle_speed(self, speed):
         self.cursor_widget.beetle.speed = speed
+        self.cursor_widget.beetle2.speed = speed
 
     def update_camera(self, image):
         pixmap = QPixmap.fromImage(image)

@@ -16,7 +16,7 @@ class HandCursorWidget(QWidget):
         super().__init__()
         self.setWindowTitle("Hand Cursor Controller")
         self.setStyleSheet("background-color: #f0f0f0; border: 2px solid #404040;")
-        self.setFixedSize(500, 500)
+        self.setFixedSize(1000, 1000)
         self.cursor_pos = [0.5, 0.5]
         self.hand_detected = False
         self.gesture = 0  # 0: palm, 1: fist
@@ -37,25 +37,31 @@ class HandCursorWidget(QWidget):
             'blue_square': (10, 10),
             'pink_square': (300, 100),
             'beetle': (400, 400),
-            'circle': (200, 200)
+            'beetle2': (100, 400),
+            'circle': (200, 60)
         }
 
         blue_pos = self.initial_positions['blue_square']
         pink_pos = self.initial_positions['pink_square']
         beetle_pos = self.initial_positions['beetle']
+        beetle2_pos = self.initial_positions['beetle2']
         circle_pos = self.initial_positions['circle']
 
         self.pink_square = DraggableSquare(pink_pos[0], pink_pos[1], 100, QColor(255, 105, 180))
         self.beetle = ObjectWithTarget(beetle_pos[0], beetle_pos[1], 40, QColor(0, 128, 0))
+        self.beetle2 = ObjectWithTarget(beetle2_pos[0], beetle2_pos[1], 40, QColor(0, 180, 0))
         self.orange_circle = StaticCircle(circle_pos[0], circle_pos[1], 50, QColor(255, 165, 0))
 
         self.squares = [
             DraggableSquare(blue_pos[0], blue_pos[1], 100, QColor(65, 105, 225)),
             self.pink_square,
-            self.beetle
+            self.beetle,
+            self.beetle2
         ]
 
         self.beetle.set_target(self.orange_circle)
+        self.beetle2.set_target(self.orange_circle)
+
         self.game_timer = QTimer()
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
@@ -66,6 +72,8 @@ class HandCursorWidget(QWidget):
         self.squares[1].x, self.squares[1].y = self.initial_positions['pink_square']
         self.squares[2].x, self.squares[2].y = self.initial_positions['beetle']
         self.orange_circle.x, self.orange_circle.y = self.initial_positions['circle']
+
+        self.beetle2.x, self.beetle2.y = self.initial_positions['beetle2']
 
         # Сброс состояния игры
         self.end_game = False
@@ -145,10 +153,14 @@ class HandCursorWidget(QWidget):
                 self.dragging_square.dragging = False
                 self.dragging_square = None
 
-        if gesture != 1:  # Только когда не зажато
+        if gesture != 1:
             self.beetle.move_towards_target()
+            self.beetle2.move_towards_target()
 
-        if not self.end_game and self.check_circle_collision(self.beetle, self.orange_circle):
+        if not self.end_game and (
+                self.check_circle_collision(self.beetle, self.orange_circle) or
+                self.check_circle_collision(self.beetle2, self.orange_circle)
+        ):
             self.show_end_game()
 
         # Обрабатываем столкновения со стенами
