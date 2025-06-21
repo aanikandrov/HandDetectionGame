@@ -1,22 +1,17 @@
 from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QBrush
 
+from Objects.GameObject import GameObject
 
-class StaticCircle:
+class StaticCircle(GameObject):
     def __init__(self, x, y, radius, color):
-        self.x = x
-        self.y = y
+        super().__init__(x, y, color)
         self.radius = radius
-        self.color = color
 
     def get_center(self):
         return QPointF(self.x, self.y)
 
-    def get_radius(self):
-        return self.radius
-
     def draw(self, painter):
         painter.setBrush(QBrush(self.color))
-        painter.drawEllipse(QPointF(int(self.x), int(self.y)),
-                            int(self.radius), int(self.radius))
+        painter.drawEllipse(self.get_center(), self.radius, self.radius)
 

@@ -5,9 +5,6 @@ from PyQt5.QtGui import QImage
 
 import time # для FPS
 
-
-
-
 class HandTrackerThread(QThread):
     position_updated = pyqtSignal(float, float, int)  # x, y, gesture
     frame_updated = pyqtSignal(QImage)
@@ -60,12 +57,7 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5
         )
 
-        frame_time = 1.0 / self.FPS
-
         while self.running:
-
-            start_time = time.time()
-
             ret, frame = self.cap.read()
             frame = cv2.flip(frame, 1)
             if not ret:

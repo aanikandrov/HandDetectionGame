@@ -30,8 +30,8 @@ class MainWindow(QMainWindow):
         self.start_pause_button = QPushButton("Start")
         self.start_pause_button.setFixedSize(100, 30)
         self.start_pause_button.clicked.connect(self.toggle_pause)
-        # Изначально кнопка недоступна
         self.start_pause_button.setEnabled(False)
+
 
         # Таймер для увеличения скорости
         self.speed_increase_timer = QTimer(self)
@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
         self.restart_button = QPushButton("Restart")
         self.restart_button.setFixedSize(100, 30)
         self.restart_button.clicked.connect(self.restart_game)
+        self.restart_button.setEnabled(False)
         control_layout.addWidget(self.restart_button)
 
 
@@ -144,6 +145,7 @@ class MainWindow(QMainWindow):
 
         # Остановка таймеров
         self.speed_increase_timer.stop()
+        self.active_timer.stop()
 
         # Сброс виджета игры
         self.cursor_widget.reset_game()
@@ -154,6 +156,7 @@ class MainWindow(QMainWindow):
 
     def enable_start_button(self, model_loaded):
         self.start_pause_button.setEnabled(model_loaded)
+        self.restart_button.setEnabled(model_loaded)
 
     def increase_beetle_speed(self):
         # Увеличиваем скорость только при ладони (gesture == 0)
