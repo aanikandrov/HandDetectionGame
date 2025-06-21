@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
 
         self.active_seconds = 0
         self.current_gesture = 1
+        self.hand_detected = False
 
         # Виджет камеры
         self.camera_widget = QLabel()
@@ -100,8 +101,10 @@ class MainWindow(QMainWindow):
         self.tracker_thread.landmarks_detected.connect(self.cursor_widget.set_hand_detected)
         self.tracker_thread.frame_updated.connect(self.update_camera)
         self.tracker_thread.start()
+
         # Подключаем новый сигнал
-        self.tracker_thread.model_loaded.connect(self.enable_start_button)
+        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
+
 
         # Инициализация таймера игры
         self.game_paused = True
@@ -110,8 +113,17 @@ class MainWindow(QMainWindow):
         self.active_timer.setInterval(1000)
         self.active_timer.timeout.connect(self.update_active_timer)
 
+        self.cursor_widget.game_ended.connect(self.on_game_ended)
+        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
+        self.tracker_thread.landmarks_detected.connect(self.set_hand_detected)
+
+    def set_hand_detected(self, detected):
+        self.hand_detected = detected
+
     def update_active_timer(self):
-        if not self.game_paused and self.current_gesture == 0:
+        if (not self.game_paused and
+                self.current_gesture == 0 and
+                self.hand_detected):
             self.active_seconds += 1
             minutes = self.active_seconds // 60
             seconds = self.active_seconds % 60
@@ -132,6 +144,12 @@ class MainWindow(QMainWindow):
             self.speed_increase_timer.stop()
             self.active_timer.stop()
             self.cursor_widget.game_paused = True  # Обновляем состояние в виджете
+
+    def on_game_ended(self):
+        self.active_timer.stop()
+        self.speed_increase_timer.stop()
+        self.game_paused = True
+        self.start_pause_button.setText("Start")
 
     def restart_game(self):
         # Сброс таймера
@@ -160,7 +178,9 @@ class MainWindow(QMainWindow):
 
     def increase_beetle_speed(self):
         # Увеличиваем скорость только при ладони (gesture == 0)
-        if not self.game_paused and self.current_gesture == 0:
+        if (not self.game_paused and
+                self.current_gesture == 0 and
+                self.hand_detected):
             current_speed = self.cursor_widget.beetle.speed
             if current_speed < 10:
                 new_speed = current_speed + 1

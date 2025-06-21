@@ -10,6 +10,7 @@ from Objects.DraggableSquare import DraggableSquare
 
 class HandCursorWidget(QWidget):
     restart_requested = pyqtSignal()
+    game_ended = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -269,18 +270,26 @@ class HandCursorWidget(QWidget):
     def show_end_game(self):
         self.game_end = True
         self.end_game = True
+        self.game_paused = True
+        self.game_ended.emit()
+
         self.update()
+
+        if self.game_timer.isActive():
+            self.game_timer.stop()
 
         if hasattr(self, 'end_game_timer') and self.end_game_timer:
             self.end_game_timer.stop()
 
+
+
+
+
         self.end_game_timer = QTimer(self)
         self.end_game_timer.setSingleShot(True)
-        self.end_game_timer.timeout.connect(self.reset_game)
         self.end_game_timer.timeout.connect(self.restart_requested.emit)
+        self.end_game_timer.timeout.connect(self.reset_game)
         self.end_game_timer.start(3000)
-
-        self.reset_game()
 
     def close_application(self):
         self.end_game_timer.stop()
