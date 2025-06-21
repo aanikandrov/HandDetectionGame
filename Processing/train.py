@@ -5,6 +5,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import numpy as np
 
+""" Обучение модели """
+
 # Предсказывает что именно за положение руки
 
 data_dict = pickle.load(open('data.pickle', 'rb'))

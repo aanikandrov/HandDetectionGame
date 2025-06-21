@@ -7,42 +7,49 @@ from Objects.DraggableSquare import DraggableSquare
 from Objects.ObjectWithTarget import ObjectWithTarget
 from Objects.StaticCircle import StaticCircle
 
-
 class HandCursorWidget(QWidget):
-    restart_requested = pyqtSignal()
-    game_ended = pyqtSignal()
+    """ Виджет игрового поля """
+
+    # Сигналы для взаимодействия с основным окном
+    restart_requested = pyqtSignal() # Перезапуск игры
+    game_ended = pyqtSignal() # Завершение игры
 
     def __init__(self):
+        """ Инициализация виджета """
         super().__init__()
         self.setWindowTitle("Hand Cursor Controller")
         self.setStyleSheet("background-color: #000033; border: 2px solid #404040;")
         self.setFixedSize(1000, 1000)
-        self.cursor_pos = [0.5, 0.5]
-        self.hand_detected = False
-        self.gesture = 0  # 0: palm, 1: fist
 
-        self.trail_positions = []       # Позиции для следа
-        self.trail_colors = []          # Цвет следа
-        self.is_trail = True            # Флаг следа
-        self.trail_max_length = 20      # Максимальная длина следа
+        # Параметры курсора
+        self.cursor_pos = [0.5, 0.5]  # Нормализованная позиция курсора
+        self.hand_detected = False    # Флаг обнаружения руки
+        self.gesture = 0              # Текущий жест (0: ладонь, 1: кулак)
 
-        self.dragging_square = None
-        self.end_game = False
-        self.end_game_timer = None
-        self.game_paused = True
-        self.game_start_time = 0
-        self.game_end = False
+        # Параметры следа курсора
+        self.trail_positions = []     # Список позиций следа
+        self.trail_colors = []        # Цвета точек следа
+        self.is_trail = True          # Включение/отключение следа
+        self.trail_max_length = 20    # Максимальная длина следа
 
+        # Игровые объекты и состояние
+        self.dragging_square = None   # Перетаскиваемый объект
+        self.end_game = False         # Флаг завершения
+        self.end_game_timer = None    # Таймер перезапуска после завершения
+        self.game_paused = True       # Флаг паузы
+        self.game_start_time = 0      # Время начала
+        self.game_end = False         # Флаг окончания
+
+        # Начальные позиции объектов
         self.initial_positions = {
             'blue_square': (200, 100),
             'pink_square': (500, 100),
-
             'circle': (400, 100),
-
             'beetle': (500, 600),
             'beetle2': (200, 600)
         }
 
+        # Создание объектов
         blue_pos = self.initial_positions['blue_square']
         pink_pos = self.initial_positions['pink_square']
         beetle_pos = self.initial_positions['beetle']
@@ -61,23 +68,26 @@ class HandCursorWidget(QWidget):
             self.beetle2
         ]
 
+        # Настройка целей для движущихся объектов
         self.beetle.set_target(self.orange_circle)
         self.beetle2.set_target(self.orange_circle)
 
+        # Таймер
         self.game_timer = QTimer()
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
 
     def reset_game(self):
+        """ Сброс в начальное состояние"""
+
         # Сброс позиций объектов
         self.squares[0].x, self.squares[0].y = self.initial_positions['blue_square']
         self.squares[1].x, self.squares[1].y = self.initial_positions['pink_square']
         self.squares[2].x, self.squares[2].y = self.initial_positions['beetle']
         self.orange_circle.x, self.orange_circle.y = self.initial_positions['circle']
-
         self.beetle2.x, self.beetle2.y = self.initial_positions['beetle2']
 
-        # Сброс состояния игры
+        # Сброс состояния
         self.end_game = False
         self.game_end = False
         self.dragging_square = None
@@ -95,13 +105,24 @@ class HandCursorWidget(QWidget):
         self.update()
 
 
+    def set_hand_detected(self, detected):
+        """ Обновление статуса обнаружения руки """
+        if not detected:
+            self.hand_detected = False
+            # Сбрасываем перетаскивание при потере руки
+            if self.dragging_square is not None:
+                self.dragging_square.dragging = False
+                self.dragging_square = None
+
     def update_cursor_position(self, x, y, gesture):
+        """ Обновление позиции курсора и взаимодействий """
+
         # Всегда обновляем позицию курсора, даже на паузе
         self.cursor_pos = [x, y]
         self.gesture = gesture
         self.hand_detected = True
 
-        # Добавляем точку в след (если включен)
+        # Добавляем точку в след (если включен след)
         if self.is_trail:
             color = QColor(255, 0, 0) if gesture == 0 else QColor(0, 255, 0)
             self.trail_positions.append((x * self.width(), y * self.height()))
@@ -116,6 +137,7 @@ class HandCursorWidget(QWidget):
             self.update()
             return
 
+        # Управление таймером
         if gesture == 1:  # Кулак
             if self.game_timer.isActive():
                 self.game_timer.stop()
@@ -130,7 +152,7 @@ class HandCursorWidget(QWidget):
         # Проверка столкновений и отталкивание квадратов
         self.resolve_collisions()
 
-        # Перетаскивание
+        # Перетаскивание объектов
         if gesture == 1:  # Кулак (зажатие)
             if self.dragging_square is not None:
                 # Продолжаем перетаскивание текущего квадрата
@@ -155,10 +177,12 @@ class HandCursorWidget(QWidget):
                 self.dragging_square.dragging = False
                 self.dragging_square = None
 
+        # Движение врагов при открытой ладони
         if gesture != 1:
             self.beetle.move_towards_target()
             self.beetle2.move_towards_target()
 
+        # Проверка на конец игры
         if not self.end_game and (
                 self.check_circle_collision(self.beetle, self.orange_circle) or
                 self.check_circle_collision(self.beetle2, self.orange_circle)
@@ -167,10 +191,14 @@ class HandCursorWidget(QWidget):
 
         # Обрабатываем столкновения со стенами
         self.resolve_wall_collisions()
-
         self.update()
 
+
     def ensure_square_in_bounds(self, square):
+        """ Проверка нахождения объектов в пределах границ """
+
+        # TODO оптимизировать
+
         # Левая граница
         if square.x < 0:
             square.x = 0
@@ -188,18 +216,22 @@ class HandCursorWidget(QWidget):
             square.y = self.height() - square.size
 
     def resolve_wall_collisions(self):
+        """ Обработка столкновений объектов со стенами """
         for square in self.squares:
             self.ensure_square_in_bounds(square)
 
     def resolve_collisions(self):
+        """ Обработка столкновений объектов"""
+
         # Проверяем все пары объектов
         for i in range(len(self.squares)):
             for j in range(i + 1, len(self.squares)):
                 obj1 = self.squares[i]
                 obj2 = self.squares[j]
 
-                # Проверяем столкновение только между квадратами
-                if isinstance(obj1, ObjectWithTarget) and isinstance(obj2, ObjectWithTarget):
+                # Пропуск столкновений между врагами
+                if (isinstance(obj1, ObjectWithTarget)
+                        and isinstance(obj2, ObjectWithTarget)):
                     continue
 
                 if self.check_collision(obj1, obj2):
@@ -207,11 +239,12 @@ class HandCursorWidget(QWidget):
 
         # Проверяем столкновения квадратов с кругом
         for square in self.squares:
-            if not isinstance(square, ObjectWithTarget):  # Не проверяем столкновение жука с кругом
+            if not isinstance(square, ObjectWithTarget):  # Не враги
                 if self.check_square_circle_collision(square, self.orange_circle):
                     self.push_square_from_circle(square, self.orange_circle)
 
     def check_collision(self, square1, square2):
+        """ Проверка столкновения двух квадратов """
         # Проверяем пересечение по осям X и Y
         return (square1.x < square2.x + square2.size and
                 square1.x + square1.size > square2.x and
@@ -230,7 +263,7 @@ class HandCursorWidget(QWidget):
         return distance < circle.radius
 
     def push_square_from_circle(self, square, circle):
-        """Отталкивает квадрат от круга"""
+        """ Отталкивает квадрат от круга """
         if square.dragging:
             return  # Не отталкиваем перетаскиваемый квадрат
 
@@ -281,42 +314,9 @@ class HandCursorWidget(QWidget):
 
         return distance < min_distance
 
-    def show_end_game(self):
-        self.game_end = True
-        self.end_game = True
-        self.game_paused = True
-        self.game_ended.emit()
-
-        self.update()
-
-        if self.game_timer.isActive():
-            self.game_timer.stop()
-
-        if hasattr(self, 'end_game_timer') and self.end_game_timer:
-            self.end_game_timer.stop()
-
-
-
-
-
-        self.end_game_timer = QTimer(self)
-        self.end_game_timer.setSingleShot(True)
-        self.end_game_timer.timeout.connect(self.restart_requested.emit)
-        self.end_game_timer.timeout.connect(self.reset_game)
-        self.end_game_timer.start(3000)
-
-    def close_application(self):
-        self.end_game_timer.stop()
-
-        main_window = self.window()
-        if main_window:
-            main_window.close()
-
-        QApplication.quit()
-
-
-
     def push_objects_apart(self, square1, square2):
+        """ Отталкивание объектов друг от друга"""
+
         # Рассчитываем вектор между центрами
         center1 = square1.get_center()
         center2 = square2.get_center()
@@ -355,15 +355,42 @@ class HandCursorWidget(QWidget):
                 square2.x += dx * force
                 square2.y += dy * force
 
-    def set_hand_detected(self, detected):
-        if not detected:
-            self.hand_detected = False
-            # Сбрасываем перетаскивание при потере руки
-            if self.dragging_square is not None:
-                self.dragging_square.dragging = False
-                self.dragging_square = None
+    def show_end_game(self):
+        """ Завершение игры """
+        self.game_end = True
+        self.end_game = True
+        self.game_paused = True
+        self.game_ended.emit()
+        self.update()
+
+        # Остановка таймера
+        if self.game_timer.isActive():
+            self.game_timer.stop()
+
+        # Остановка предыдущего таймера завершения
+        if hasattr(self, 'end_game_timer') and self.end_game_timer:
+            self.end_game_timer.stop()
+
+        # Запуск таймера перезапуска (3 секунды)
+        self.end_game_timer = QTimer(self)
+        self.end_game_timer.setSingleShot(True)
+        self.end_game_timer.timeout.connect(self.restart_requested.emit)
+        self.end_game_timer.timeout.connect(self.reset_game)
+        self.end_game_timer.start(3000)
+
+
+    def close_application(self):
+        """ Закрытие приложения """
+        self.end_game_timer.stop()
+
+        main_window = self.window()
+        if main_window:
+            main_window.close()
+
+        QApplication.quit()
 
     def paintEvent(self, event):
+        """ Отрисовка игровой сцены """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
@@ -372,7 +399,7 @@ class HandCursorWidget(QWidget):
         painter.setPen(QPen(QColor(0x40, 0x40, 0x40), 2))  # #404040
         painter.drawRect(self.rect().adjusted(1, 1, -1, -1))
 
-        # Отрисовка следа
+        # Отрисовка следа курсора
         if self.is_trail and len(self.trail_positions) > 1:
             for i in range(1, len(self.trail_positions)):
                 pen = QPen(self.trail_colors[i], 2)

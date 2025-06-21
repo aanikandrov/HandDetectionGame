@@ -3,6 +3,8 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
+""" Запуск окна cv2 с выводом модели руки """
+
 model_dict = pickle.load(open('../Model/model.p', 'rb'))
 model = model_dict['model']
 

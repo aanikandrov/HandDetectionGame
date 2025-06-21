@@ -3,6 +3,8 @@ import pickle
 import cv2
 import mediapipe as mp
 
+""" Размечаем датасет через MediaPipe """
+
 # Инициализация MediaPipe
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(

@@ -1,12 +1,7 @@
 import os
-
 import cv2
 
-# TODO разбор
-# TODO вынести в Qt
-# TODO таймер и количество изображений
-# TODO зеркальное отображение как опция
-
+""" Собираем датасет жестов пользователя """
 
 DATA_DIR = 'data'
 if not os.path.exists(DATA_DIR):

@@ -1,6 +1,8 @@
 from PyQt5.QtCore import QPointF
 
 class GameObject:
+    """ Базовый класс для всех объектов"""
+
     def __init__(self, x, y, color):
         self.x = x
         self.y = y

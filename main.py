@@ -1,20 +1,32 @@
 import os
 import sys
+
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
                              QMainWindow, QLabel, QSpinBox, QPushButton, QVBoxLayout)
+
 from HandTrackerThread import HandTrackerThread
 from HandCursorWidget import HandCursorWidget
 from RulesDialog import RulesDialog
 
 
 class MainWindow(QMainWindow):
+    """ Инициализация главного окна, создание интерфейса и подключение сигналов """
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("HandTracker")
+        self.setWindowTitle("Hand Gesture Controlled Game")
         self.setGeometry(100, 100, 1200, 600)
 
+        # Переменные и флаги
+        self.best_time = 0
+        self.active_seconds = 0
+        self.game_start_time = 0
+        self.current_gesture = 0
+        self.hand_detected = False
+        self.game_paused = True
+
+        # Центральный виджет
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
@@ -26,12 +38,7 @@ class MainWindow(QMainWindow):
         control_panel = QWidget()
         control_layout = QHBoxLayout(control_panel)
         control_layout.setContentsMargins(5, 5, 5, 5)
-
-        self.active_seconds = 0
-        self.current_gesture = 0
-        self.hand_detected = False
-        self.best_time = 0
-        self.load_best_time()
+        control_layout.addStretch()
 
         # Кнопка старт/пауза
         self.start_pause_button = QPushButton("Start")
@@ -39,19 +46,15 @@ class MainWindow(QMainWindow):
         self.start_pause_button.clicked.connect(self.toggle_pause)
         self.start_pause_button.setEnabled(False)
         self.start_pause_button.setToolTip("Поставить на паузу/продолжить")
+        control_layout.addWidget(self.start_pause_button)
 
-        # Таймер для увеличения скорости
-        self.speed_increase_timer = QTimer(self)
-        self.speed_increase_timer.setInterval(5000)  # 5 секунд
-        self.speed_increase_timer.timeout.connect(self.increase_beetle_speed)
-
+        # Кнопка перезапуска игры
         self.restart_button = QPushButton("Restart")
         self.restart_button.setFixedSize(100, 30)
         self.restart_button.clicked.connect(self.restart_game)
         self.restart_button.setEnabled(False)
         self.restart_button.setToolTip("Начать игру заново")
         control_layout.addWidget(self.restart_button)
-
 
         # Таймер
         self.timer_label = QLabel("00:00")
@@ -60,32 +63,37 @@ class MainWindow(QMainWindow):
         self.timer_label.setStyleSheet("background-color: white; border: 1px solid gray;")
         self.timer_label.setFixedSize(100, 30)
         self.timer_label.setToolTip("Текущее время")
+        control_layout.addWidget(self.timer_label)
 
+        # Таймер для увеличения скорости
+        self.speed_increase_timer = QTimer(self)
+        self.speed_increase_timer.setInterval(5000)  # 5 секунд
+        self.speed_increase_timer.timeout.connect(self.increase_beetle_speed)
 
         # Элементы управления скоростью
         speed_label = QLabel("Enemy Speed:")
+        control_layout.addWidget(speed_label)
         self.speed_spinbox = QSpinBox()
         self.speed_spinbox.setRange(1, 15)
         self.speed_spinbox.setValue(1)
         self.speed_spinbox.valueChanged.connect(self.update_beetle_speed)
         self.speed_spinbox.setDisabled(True)
         self.speed_spinbox.setToolTip("Скорость астероидов")
-
-        # Добавляем элементы на панель
-        control_layout.addWidget(self.start_pause_button)
-        control_layout.addWidget(self.timer_label)
-        control_layout.addWidget(speed_label)
         control_layout.addWidget(self.speed_spinbox)
-        control_layout.addStretch()
 
-        self.best_time_label = QLabel(f"Best: {self.format_time(self.best_time)}")
-        self.best_time_label.setFont(QFont('Arial', 16))
-        self.best_time_label.setStyleSheet("background-color: #e0e0ff; border: 1px solid gray;")
-        self.best_time_label.setFixedSize(130, 40)
-        self.best_time_label.setToolTip("Лучшее время")
-        control_layout.addWidget(self.best_time_label)
+        # Вывод лучшего времени
+        self.best_time_label_text = QLabel("Best:")
+        self.best_time_label_text.setFont(QFont('Arial', 16))
+        control_layout.addWidget(self.best_time_label_text)
 
+        self.best_time_label_value = QLabel(f"{self.format_time(self.best_time)}")
+        self.best_time_label_value.setFont(QFont('Arial', 16))
+        self.best_time_label_value.setStyleSheet("background-color: #e0e0ff; border: 1px solid gray;")
+        self.best_time_label_value.setFixedSize(130, 40)
+        self.best_time_label_value.setToolTip("Лучшее время")
+        control_layout.addWidget(self.best_time_label_value)
 
+        # Кнопка вывода правил
         self.rules_button = QPushButton("?")
         self.rules_button.setFixedSize(40, 40)
         self.rules_button.setToolTip("Показать правила игры")
@@ -110,19 +118,13 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout(right_column)
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(5)
-
-        # Растягивающий элемент для выравнивания вниз
         right_layout.addStretch(1)
-
-
 
         # Виджет камеры
         self.camera_widget = QLabel()
         self.camera_widget.setAlignment(Qt.AlignCenter)
         self.camera_widget.setStyleSheet("border: 2px solid #404040; background-color: #333;")
         self.camera_widget.setFixedSize(500, 500)
-
-        # Добавляем элементы в правую колонку
         right_layout.addWidget(self.camera_widget)
 
         # Добавляем правую колонку в основной layout
@@ -131,34 +133,35 @@ class MainWindow(QMainWindow):
         # Добавляем содержимое в главный layout
         main_vertical_layout.addLayout(content_layout)
 
-        self.cursor_widget.restart_requested.connect(self.restart_game)
-
-        # Thread трекера
+        # Thread для отслеживания руки
         self.tracker_thread = HandTrackerThread()
         self.tracker_thread.position_updated.connect(self.update_cursor_position_from_tracker)
         self.tracker_thread.landmarks_detected.connect(self.cursor_widget.set_hand_detected)
+        self.tracker_thread.landmarks_detected.connect(self.set_hand_detected)
+        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
+        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
         self.tracker_thread.frame_updated.connect(self.update_camera)
         self.tracker_thread.start()
 
-        # Подключаем новый сигнал
-        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
-
-
-        # Инициализация таймера игры
-        self.game_paused = True
-        self.game_start_time = 0
+        # Таймер игры
         self.active_timer = QTimer(self)
         self.active_timer.setInterval(1000)
         self.active_timer.timeout.connect(self.update_active_timer)
 
+        # Сигналы виджета
+        self.cursor_widget.restart_requested.connect(self.restart_game)
         self.cursor_widget.game_ended.connect(self.on_game_ended)
-        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
-        self.tracker_thread.landmarks_detected.connect(self.set_hand_detected)
+
+        # Загрузка лучшего времени из файла
+        self.load_best_time()
+
 
     def set_hand_detected(self, detected):
+        """ Обновление статуса обнаружения руки """
         self.hand_detected = detected
 
     def update_active_timer(self):
+        """ Обновление таймера во время игры """
         if (not self.game_paused and
                 self.current_gesture == 0 and
                 self.hand_detected):
@@ -169,11 +172,13 @@ class MainWindow(QMainWindow):
 
 
     def format_time(self, seconds):
+        """ Форматирование времени в формате MM:SS """
         minutes = seconds // 60
         seconds = seconds % 60
         return f"{minutes:02d}:{seconds:02d}"
 
     def load_best_time(self):
+        """ Загрузка лучшего времени из файла """
         try:
             if os.path.exists("Files/best_score.txt"):
                 with open("Files/best_score.txt", "r") as f:
@@ -184,6 +189,7 @@ class MainWindow(QMainWindow):
             print(f"Error loading best time: {e}")
 
     def save_best_time(self):
+        """ Сохранение лучшего времени в файл """
         try:
             with open("Files/best_score.txt", "w") as f:
                 f.write(str(self.best_time))
@@ -191,71 +197,76 @@ class MainWindow(QMainWindow):
             print(f"Error saving best time: {e}")
 
     def show_rules(self):
+        """ Отображение диалог с правилами игры """
         dialog = RulesDialog(self)
         dialog.exec_()
 
     def toggle_pause(self):
+        """ Переключение состояния паузы игры """
         if self.game_paused:
             self.active_timer.start()
             self.game_paused = False
             self.start_pause_button.setText("Pause")
             self.speed_increase_timer.start()
-            #self.game_start_time = 0
-            #self.timer_label.setText("00:00")
-            self.cursor_widget.game_paused = False  # Обновляем состояние в виджете
+            self.cursor_widget.game_paused = False
         else:
             self.game_paused = True
             self.start_pause_button.setText("Start")
             self.speed_increase_timer.stop()
             self.active_timer.stop()
-            self.cursor_widget.game_paused = True  # Обновляем состояние в виджете
+            self.cursor_widget.game_paused = True
 
     def best_time_to_file(self):
+        """ Обновление лучшего времени при завершении игры """
         if self.active_seconds > self.best_time:
             self.best_time = self.active_seconds
             self.save_best_time()
             self.best_time_label.setText(f"Best: {self.format_time(self.best_time)}")
 
     def on_game_ended(self):
+        """ Обработка завершения игры """
         self.active_timer.stop()
         self.speed_increase_timer.stop()
         self.game_paused = True
         self.start_pause_button.setText("Start")
         self.best_time_to_file()
 
-
     def restart_game(self):
+        """ Перезапуск игры со сбросом состояний """
+        # Обновление лучшего времени
         if self.active_seconds > self.best_time:
             self.best_time = self.active_seconds
             self.best_time_label.setText(f"Best: {self.format_time(self.best_time)}")
             self.best_time_to_file()
 
-        self.active_seconds = 0
-        self.game_start_time = 0
-        self.timer_label.setText("00:00")
-
-        # Сброс состояния
-        self.game_paused = True
-        self.start_pause_button.setText("Start")
-
         # Остановка таймеров
         self.speed_increase_timer.stop()
         self.active_timer.stop()
 
-        # Сброс виджета игры
-        self.cursor_widget.reset_game()
+        # Сброс переменных и флагов
+        self.game_paused = True
+        self.active_seconds = 0
+        self.game_start_time = 0
+        self.timer_label.setText("00:00")
+        self.start_pause_button.setText("Start")
 
-        # Сброс скорости жука
+        # Сброс скорости врагов
         self.cursor_widget.beetle.speed = 1
         self.cursor_widget.beetle2.speed = 1
         self.speed_spinbox.setValue(1)
 
+        # Сброс игрового поля
+        self.cursor_widget.reset_game()
+
+
     def enable_start_button(self, model_loaded):
+        """ Активация кнопок управления """
         self.start_pause_button.setEnabled(model_loaded)
         self.restart_button.setEnabled(model_loaded)
 
     def increase_beetle_speed(self):
-        # Увеличиваем скорость только при ладони (gesture == 0)
+        """ Увеличение скорости врагов каждые 5 секунд """
+        # Увеличиваем скорость только при открытой руке
         if (not self.game_paused and
                 self.current_gesture == 0 and
                 self.hand_detected):
@@ -266,15 +277,18 @@ class MainWindow(QMainWindow):
                 self.cursor_widget.beetle2.speed = new_speed
                 self.speed_spinbox.setValue(new_speed)
 
-    def update_cursor_position_from_tracker(self, x, y, gesture):
-        self.current_gesture = gesture
-        self.cursor_widget.update_cursor_position(x, y, gesture)
-
     def update_beetle_speed(self, speed):
+        """ Обновление скорости врагов """
         self.cursor_widget.beetle.speed = speed
         self.cursor_widget.beetle2.speed = speed
 
+    def update_cursor_position_from_tracker(self, x, y, gesture):
+        """ Обновление позиции курсора на основе данных трекера """
+        self.current_gesture = gesture
+        self.cursor_widget.update_cursor_position(x, y, gesture)
+
     def update_camera(self, image):
+        """ Обновление изображения с камеры """
         pixmap = QPixmap.fromImage(image)
         self.camera_widget.setPixmap(pixmap.scaled(
             self.camera_widget.size(),
@@ -283,6 +297,7 @@ class MainWindow(QMainWindow):
         ))
 
     def closeEvent(self, event):
+        """ Обработчик закрытия окна """
         self.tracker_thread.stop()
         self.tracker_thread.wait()
         super().closeEvent(event)
