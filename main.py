@@ -19,6 +19,58 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Hand Gesture Controlled Game")
         self.setGeometry(100, 100, 1200, 600)
 
+        self.setStyleSheet("""
+                    QMainWindow {
+                        background-color: #1a1a8f;  /* Темно-синий фон */
+                    }
+                    QWidget {
+                        background-color: #1a1a8f;
+                        color: #ffffff;  /* Белый текст */
+                        font-family: 'Courier New';
+                        font-size: 12pt;
+                    }
+                    QPushButton {
+                        background-color: #ff8800;  /* Оранжевый */
+                        color: #000000;  /* Черный текст */
+                        font-weight: bold;
+                        border: 3px solid #ffffff;  /* Белая рамка */
+                        padding: 5px;
+                        min-height: 30px;
+                        min-width: 100px;
+                    }
+                    QPushButton:hover {
+                        background-color: #ffaa44;  /* Светло-оранжевый */
+                        border: 3px solid #ffcc00;
+                    }
+                    QPushButton:pressed {
+                        background-color: #cc6600;  /* Темно-оранжевый */
+                    }
+                    QLabel {
+                        color: #ffffff;
+                        font-weight: bold;
+                    }
+                    QLabel#TimerLabel, QLabel#BestTimeLabel {
+                        background-color: #000033;  /* Темно-синий фон */
+                        border: 2px solid #ff8800;  /* Оранжевая рамка */
+                        padding: 5px;
+                        font-size: 16pt;
+                    }
+                    QSpinBox {
+                        background-color: #000033;
+                        color: #ffffff;
+                        border: 2px solid #ff8800;
+                        padding: 5px;
+                        font-weight: bold;
+                    }
+                    QScrollArea {
+                        background-color: #000033;
+                        border: 3px solid #ff8800;
+                    }
+                """)
+
+        pixel_font = QFont('Courier New', 10, QFont.Bold)
+        self.setFont(pixel_font)
+
         # Переменные и флаги
         self.best_time = 0
         self.active_seconds = 0
@@ -59,9 +111,8 @@ class MainWindow(QMainWindow):
 
         # Таймер
         self.timer_label = QLabel("00:00")
-        self.timer_label.setFont(QFont('Arial', 16))
+        self.timer_label.setObjectName("TimerLabel")
         self.timer_label.setAlignment(Qt.AlignCenter)
-        self.timer_label.setStyleSheet("background-color: white; border: 1px solid gray;")
         self.timer_label.setFixedSize(100, 30)
         self.timer_label.setToolTip("Текущее время")
         control_layout.addWidget(self.timer_label)
@@ -129,8 +180,13 @@ class MainWindow(QMainWindow):
 
         # Виджет камеры
         self.camera_widget = QLabel()
-        self.camera_widget.setAlignment(Qt.AlignCenter)
-        self.camera_widget.setStyleSheet("border: 2px solid #404040; background-color: #333;")
+        self.camera_widget.setStyleSheet("""
+                    border: 2px solid #ff8800;  /* Оранжевая рамка */
+                    background-color: #000033;  /* Темно-синий фон */
+                    color: white;
+                    font-size: 16pt;
+                    qproperty-alignment: AlignCenter;
+                """)
         self.camera_widget.setFixedSize(500, 500)
         right_layout.addWidget(self.camera_widget)
 
