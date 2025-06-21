@@ -45,7 +45,7 @@ class ProcessingWindow(QDialog):
         self.start_button.clicked.connect(self.start_processing)
         btn_layout.addWidget(self.start_button)
 
-        self.cancel_button = QPushButton("Отмена")
+        self.cancel_button = QPushButton("Назад")
         self.cancel_button.clicked.connect(self.reject)
         btn_layout.addWidget(self.cancel_button)
 

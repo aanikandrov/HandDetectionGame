@@ -76,7 +76,7 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5    # Мин порог доверия отслеживания
         )
 
-        self.pixel_size = 0 # 8 сильный эффект
+        self.pixel_size = 8 # 8 сильный эффект
                             # 0 нет эффекта
         # TODO вынести в настройки
 
@@ -155,7 +155,7 @@ class HandTrackerThread(QThread):
                     # Отрисовка курсора
                     circle_color = (0, 0, 255) if gesture == 0 else (0, 255, 0)  # red/green
                     circle_size = 20 if gesture == 0 else 10  # red/green
-                    cv2.circle(frame, (cx, cy), circle_size, circle_color, -1)
+                    cv2.circle(pixel_frame, (cx, cy), circle_size, circle_color, -1)
                 else:
                     self.landmarks_detected.emit(False)
 
