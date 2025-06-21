@@ -53,11 +53,12 @@ class MainWindow(QMainWindow):
         self.timer_label.setFixedSize(100, 30)
 
         # Элементы управления скоростью
-        speed_label = QLabel("Beetle Speed:")
+        speed_label = QLabel("Enemy Speed:")
         self.speed_spinbox = QSpinBox()
-        self.speed_spinbox.setRange(1, 10)
+        self.speed_spinbox.setRange(1, 15)
         self.speed_spinbox.setValue(1)
         self.speed_spinbox.valueChanged.connect(self.update_beetle_speed)
+        self.speed_spinbox.setDisabled(True)
 
         # Добавляем элементы на панель
         control_layout.addWidget(self.start_pause_button)

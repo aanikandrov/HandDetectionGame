@@ -3,10 +3,10 @@ from PyQt5.QtCore import Qt, QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QApplication)
 
-from Objects.ObjectWithTarget import ObjectWithTarget
-from Objects.DraggableObject import DraggableObject
-from Objects.StaticCircle import StaticCircle
 from Objects.DraggableSquare import DraggableSquare
+from Objects.ObjectWithTarget import ObjectWithTarget
+from Objects.StaticCircle import StaticCircle
+
 
 class HandCursorWidget(QWidget):
     restart_requested = pyqtSignal()
@@ -15,7 +15,7 @@ class HandCursorWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Hand Cursor Controller")
-        self.setStyleSheet("background-color: #f0f0f0; border: 2px solid #404040;")
+        self.setStyleSheet("background-color: #000033; border: 2px solid #404040;")
         self.setFixedSize(1000, 1000)
         self.cursor_pos = [0.5, 0.5]
         self.hand_detected = False
@@ -34,11 +34,13 @@ class HandCursorWidget(QWidget):
         self.game_end = False
 
         self.initial_positions = {
-            'blue_square': (10, 10),
-            'pink_square': (300, 100),
-            'beetle': (400, 400),
-            'beetle2': (100, 400),
-            'circle': (200, 60)
+            'blue_square': (200, 100),
+            'pink_square': (500, 100),
+
+            'circle': (400, 100),
+
+            'beetle': (500, 600),
+            'beetle2': (200, 600)
         }
 
         blue_pos = self.initial_positions['blue_square']
@@ -48,8 +50,8 @@ class HandCursorWidget(QWidget):
         circle_pos = self.initial_positions['circle']
 
         self.pink_square = DraggableSquare(pink_pos[0], pink_pos[1], 100, QColor(255, 105, 180))
-        self.beetle = ObjectWithTarget(beetle_pos[0], beetle_pos[1], 40, QColor(0, 128, 0))
-        self.beetle2 = ObjectWithTarget(beetle2_pos[0], beetle2_pos[1], 40, QColor(0, 180, 0))
+        self.beetle = ObjectWithTarget(beetle_pos[0], beetle_pos[1], 40, QColor(0, 255, 0))
+        self.beetle2 = ObjectWithTarget(beetle2_pos[0], beetle2_pos[1], 40, QColor(0, 255, 0))
         self.orange_circle = StaticCircle(circle_pos[0], circle_pos[1], 50, QColor(255, 165, 0))
 
         self.squares = [
@@ -365,7 +367,9 @@ class HandCursorWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        painter.setPen(QPen(QColor(100, 100, 100), 2))
+        # Рисуем фон и рамку вручную
+        painter.fillRect(self.rect(), QColor(0, 0, 0))
+        painter.setPen(QPen(QColor(0x40, 0x40, 0x40), 2))  # #404040
         painter.drawRect(self.rect().adjusted(1, 1, -1, -1))
 
         # Отрисовка следа
@@ -373,7 +377,6 @@ class HandCursorWidget(QWidget):
             for i in range(1, len(self.trail_positions)):
                 pen = QPen(self.trail_colors[i], 2)
                 painter.setPen(pen)
-
                 x1 = int(self.trail_positions[i - 1][0])
                 y1 = int(self.trail_positions[i - 1][1])
                 x2 = int(self.trail_positions[i][0])
@@ -392,18 +395,12 @@ class HandCursorWidget(QWidget):
             color = QColor(255, 0, 0) if self.gesture == 0 else QColor(0, 200, 0)
             painter.setBrush(color)
             painter.setPen(Qt.NoPen)
-
             x = int(self.cursor_pos[0] * self.width())
             y = int(self.cursor_pos[1] * self.height())
-
-            # Обеспечиваем нахождение курсора в пределах виджета
             x = max(15, min(self.width() - 15, x))
             y = max(15, min(self.height() - 15, y))
-
             size = 20 if self.gesture == 0 else 10
             painter.drawEllipse(QPoint(x, y), size, size)
-
-            # Отрисовка центральной точки
             painter.setBrush(QColor(255, 255, 255))
             painter.drawEllipse(QPoint(x, y), 5, 5)
 
