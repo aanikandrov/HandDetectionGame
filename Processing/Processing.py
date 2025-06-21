@@ -11,55 +11,64 @@ from sklearn.metrics import accuracy_score
 def collect_data():
     """Сбор датасета жестов пользователя с помощью камеры """
 
-    DATA_DIR = 'data'
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
+    try:
+        DATA_DIR = 'data'
+        if not os.path.exists(DATA_DIR):
+            os.makedirs(DATA_DIR)
 
-    number_of_classes = 2 # Количество классов (жестов)
-    dataset_size = 200    # Количество изображений для одного класса
-    wait = 100            # Задержка между кадрами (мс)
+        number_of_classes = 2 # Количество классов (жестов)
+        dataset_size = 200    # Количество изображений для одного класса
+        wait = 100            # Задержка между кадрами (мс)
 
-    cap = cv2.VideoCapture(0) # Захват камеры
+        cap = cv2.VideoCapture(0) # Захват камеры
 
-    for j in range(number_of_classes):
-        class_dir = os.path.join(DATA_DIR, str(j))
-        if not os.path.exists(class_dir):
-            os.makedirs(class_dir)
+        for j in range(number_of_classes):
+            class_dir = os.path.join(DATA_DIR, str(j))
+            if not os.path.exists(class_dir):
+                os.makedirs(class_dir)
 
-        print(f'Сбор данных для класса {j}')
-        print('Готовы? Нажмите "Q"!')
+            print(f'Сбор данных для класса {j}')
+            print('Готовы? Нажмите "Q"!')
 
-        # Ожидание готовности пользователя
-        while True:
-            ret, frame = cap.read()
-            frame = cv2.flip(frame, 1)  # Зеркальное отражение
+            # Ожидание готовности пользователя
+            while True:
+                ret, frame = cap.read()
+                frame = cv2.flip(frame, 1)  # Зеркальное отражение
 
-            # Отображение инструкции
-            cv2.putText(
-                frame, 'Ready? Press "Q" ! :)', (100, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA
-            )
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(wait) == ord('q'):
-                break
+                # Отображение инструкции
+                cv2.putText(
+                    frame, 'Ready? Press "Q" ! :)', (100, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA
+                )
+                cv2.imshow('frame', frame)
+                if cv2.waitKey(wait) == ord('q'):
+                    break
 
-        # Сбор изображений
-        counter = 0
-        while counter < dataset_size:
-            ret, frame = cap.read()
-            frame = cv2.flip(frame, 1)  # Зеркальное отражение
+            # Сбор изображений
+            counter = 0
+            while counter < dataset_size:
+                ret, frame = cap.read()
+                frame = cv2.flip(frame, 1)  # Зеркальное отражение
 
-            cv2.imshow('frame', frame)
-            cv2.waitKey(wait)
+                cv2.imshow('frame', frame)
+                cv2.waitKey(wait)
 
-            # Сохранение изображения
-            img_path = os.path.join(class_dir, f'{counter}.jpg')
-            cv2.imwrite(img_path, frame)
-            counter += 1
+                # Сохранение изображения
+                img_path = os.path.join(class_dir, f'{counter}.jpg')
+                cv2.imwrite(img_path, frame)
+                counter += 1
 
-    cap.release()
-    cv2.destroyAllWindows()
-    print("Сбор данных завершен!")
+        cap.release()
+        cv2.destroyAllWindows()
+        print("Сбор данных завершен!")
+
+    except Exception as e:
+        print(f"Ошибка в collect_data: {str(e)}")
+
+    finally:
+        if 'cap' in locals() and cap.isOpened():
+            cap.release()
+        cv2.destroyAllWindows()
 
 
 def create_dataset():

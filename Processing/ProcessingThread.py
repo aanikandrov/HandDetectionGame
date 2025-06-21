@@ -56,6 +56,9 @@ class ProcessingThread(QThread):
         except Exception as e:
             self.log_message.emit(f"Ошибка: {str(e)}")
             self.step_completed.emit(False)
+        finally:
+            if self.cancel_requested:
+                self.log_message.emit("Обработка отменена пользователем")
 
     def cancel(self):
         """Запрос отмены обработки"""

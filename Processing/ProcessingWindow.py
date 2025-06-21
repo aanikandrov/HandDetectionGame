@@ -1,12 +1,13 @@
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QLabel, QPushButton,
                              QProgressBar, QHBoxLayout, QGroupBox, QTextEdit)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from Processing.ProcessingThread import ProcessingThread
 
 class ProcessingWindow(QDialog):
     """Окно для обработки данных и обучения модели"""
 
+    finished = pyqtSignal()  # Сигнал закрытия окна
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Обработка данных и обучение модели")
@@ -132,3 +133,7 @@ class ProcessingWindow(QDialog):
             self.start_button.setEnabled(True)
             self.cancel_button.setEnabled(True)
 
+    def reject(self):
+        """Обработка закрытия окна"""
+        super().reject()
+        self.finished.emit()
