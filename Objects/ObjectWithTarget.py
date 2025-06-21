@@ -12,8 +12,7 @@ class ObjectWithTarget(DraggableObject):
         self.target = None
 
         # Загрузка текстуры stone.png
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        texture_path = os.path.join(current_dir, 'stone.png')
+        texture_path = os.path.join('Images/stone.png')
 
         self.texture = QPixmap()
         if not self.texture.load(texture_path):

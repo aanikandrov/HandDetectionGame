@@ -10,9 +10,8 @@ class StaticCircle(GameObject):
         super().__init__(x, y, color)
         self.radius = radius
 
-        # Получаем абсолютный путь к изображению
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        texture_path = os.path.join(current_dir, 'earth.png')
+
+        texture_path = os.path.join('Images\earth.png')
 
         # Загружаем текстуру с проверкой
         self.texture = QPixmap()
