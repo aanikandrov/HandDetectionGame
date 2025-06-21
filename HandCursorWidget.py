@@ -15,29 +15,39 @@ class HandCursorWidget(QWidget):
         super().__init__()
         self.setWindowTitle("Hand Cursor Controller")
         self.setStyleSheet("background-color: #f0f0f0; border: 2px solid #404040;")
-        self.setMinimumSize(400, 400)
+        self.setFixedSize(500, 500)
         self.cursor_pos = [0.5, 0.5]
         self.hand_detected = False
-        self.gesture = 0  # 0: fist, 1: palm
+        self.gesture = 0  # 0: palm, 1: fist
 
         self.trail_positions = []       # Позиции для следа
         self.trail_colors = []          # Цвет следа
         self.is_trail = True            # Флаг следа
         self.trail_max_length = 20      # Максимальная длина следа
 
-        self.pink_square = DraggableSquare(300, 300, 100, QColor(255, 105, 180))
-        self.beetle = Beetle(500, 500, 40, QColor(0, 128, 0))  # Зеленый жук
+        self.initial_positions = {
+            'blue_square': (10, 10),
+            'pink_square': (300, 100),
+            'beetle': (400, 400),
+            'circle': (200, 200)
+        }
 
-        self.orange_circle = StaticCircle(200,200, 50, QColor(255, 165, 0))
+        blue_pos = self.initial_positions['blue_square']
+        pink_pos = self.initial_positions['pink_square']
+        beetle_pos = self.initial_positions['beetle']
+        circle_pos = self.initial_positions['circle']
 
-        # Устанавливаем цель для жука
-        self.beetle.set_target(self.orange_circle)
+        self.pink_square = DraggableSquare(pink_pos[0], pink_pos[1], 100, QColor(255, 105, 180))
+        self.beetle = Beetle(beetle_pos[0], beetle_pos[1], 40, QColor(0, 128, 0))
+        self.orange_circle = StaticCircle(circle_pos[0], circle_pos[1], 50, QColor(255, 165, 0))
 
         self.squares = [
-            DraggableSquare(10, 10, 100, QColor(65, 105, 225)),  # Синий
+            DraggableSquare(blue_pos[0], blue_pos[1], 100, QColor(65, 105, 225)),
             self.pink_square,
             self.beetle
         ]
+
+        self.beetle.set_target(self.orange_circle)
 
         self.dragging_square = None
         self.end_game = False
@@ -52,12 +62,7 @@ class HandCursorWidget(QWidget):
         self.game_paused = True
         self.game_start_time = 0
 
-        self.initial_positions = {
-            'blue_square': (100, 100),
-            'pink_square': (300, 100),
-            'beetle': (500, 500),
-            'circle': (200, 200)
-        }
+
 
         self.game_end = False
 
@@ -104,7 +109,7 @@ class HandCursorWidget(QWidget):
             self.update()
             return
 
-        if gesture == 0:  # Кулак
+        if gesture == 1:  # Кулак
             if self.game_timer.isActive():
                 self.game_timer.stop()
         else:

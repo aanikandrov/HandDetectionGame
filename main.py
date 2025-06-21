@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
 from HandTrackerThread import HandTrackerThread
 from HandCursorWidget import HandCursorWidget
 
-# TODO вынести модель внешне
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -75,8 +75,11 @@ class MainWindow(QMainWindow):
 
         # Виджет курсора (игровое поле)
         self.cursor_widget = HandCursorWidget()
-        self.cursor_widget.setMinimumSize(500, 500)
+        self.cursor_widget.setFixedSize(500, 500)
         content_layout.addWidget(self.cursor_widget)
+
+        self.active_seconds = 0
+        self.current_gesture = 1
 
         # Виджет камеры
         self.camera_widget = QLabel()
@@ -102,27 +105,36 @@ class MainWindow(QMainWindow):
         # Инициализация таймера игры
         self.game_paused = True
         self.game_start_time = 0
-        self.game_timer = QTimer(self)
-        self.game_timer.timeout.connect(self.update_timer)
+        self.active_timer = QTimer(self)
+        self.active_timer.setInterval(1000)
+        self.active_timer.timeout.connect(self.update_active_timer)
+
+    def update_active_timer(self):
+        if not self.game_paused and self.current_gesture == 0:
+            self.active_seconds += 1
+            minutes = self.active_seconds // 60
+            seconds = self.active_seconds % 60
+            self.timer_label.setText(f"{minutes:02d}:{seconds:02d}")
 
     def toggle_pause(self):
         if self.game_paused:
+            self.active_timer.start()
             self.game_paused = False
             self.start_pause_button.setText("Pause")
             self.speed_increase_timer.start()
             #self.game_start_time = 0
             #self.timer_label.setText("00:00")
-            self.game_timer.start(1000)  # Обновление каждую секунду
             self.cursor_widget.game_paused = False  # Обновляем состояние в виджете
         else:
             self.game_paused = True
             self.start_pause_button.setText("Start")
             self.speed_increase_timer.stop()
-            self.game_timer.stop()
+            self.active_timer.stop()
             self.cursor_widget.game_paused = True  # Обновляем состояние в виджете
 
     def restart_game(self):
         # Сброс таймера
+        self.active_seconds = 0
         self.game_start_time = 0
         self.timer_label.setText("00:00")
 
@@ -131,7 +143,6 @@ class MainWindow(QMainWindow):
         self.start_pause_button.setText("Start")
 
         # Остановка таймеров
-        self.game_timer.stop()
         self.speed_increase_timer.stop()
 
         # Сброс виджета игры
@@ -145,24 +156,17 @@ class MainWindow(QMainWindow):
         self.start_pause_button.setEnabled(model_loaded)
 
     def increase_beetle_speed(self):
-        """Увеличивает скорость жука на 1 каждые 5 секунд"""
-        if not self.game_paused and self.current_gesture != 1:  # Только когда не пауза и не кулак
+        # Увеличиваем скорость только при ладони (gesture == 0)
+        if not self.game_paused and self.current_gesture == 0:
             current_speed = self.cursor_widget.beetle.speed
-            if current_speed < 10:  # Максимальная скорость 10
+            if current_speed < 10:
                 new_speed = current_speed + 1
                 self.cursor_widget.beetle.speed = new_speed
                 self.speed_spinbox.setValue(new_speed)
 
     def update_cursor_position_from_tracker(self, x, y, gesture):
-        """Промежуточный обработчик для отслеживания жеста"""
-        self.current_gesture = gesture  # Сохраняем текущий жест
+        self.current_gesture = gesture
         self.cursor_widget.update_cursor_position(x, y, gesture)
-
-    def update_timer(self):
-        self.game_start_time += 1
-        minutes = self.game_start_time // 60
-        seconds = self.game_start_time % 60
-        self.timer_label.setText(f"{minutes:02d}:{seconds:02d}")
 
     def update_beetle_speed(self, speed):
         self.cursor_widget.beetle.speed = speed
