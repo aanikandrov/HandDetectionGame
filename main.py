@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
 
 from HandTrackerThread import HandTrackerThread
 from HandCursorWidget import HandCursorWidget
+from Processing.ProcessingWindow import ProcessingWindow
 from RulesDialog import RulesDialog
 
 
@@ -86,7 +87,7 @@ class MainWindow(QMainWindow):
         self.best_time_label_text.setFont(QFont('Arial', 16))
         control_layout.addWidget(self.best_time_label_text)
 
-        self.best_time_label_value = QLabel(f"{self.format_time(self.best_time)}")
+        self.best_time_label_value = QLabel("00:00")
         self.best_time_label_value.setFont(QFont('Arial', 16))
         self.best_time_label_value.setStyleSheet("background-color: #e0e0ff; border: 1px solid gray;")
         self.best_time_label_value.setFixedSize(130, 40)
@@ -102,6 +103,12 @@ class MainWindow(QMainWindow):
 
         # Добавляем панель управления в главный layout
         main_vertical_layout.addWidget(control_panel)
+
+        # Кнопка вызова окна обработки данных
+        self.processing_button = QPushButton("Обработка данных")
+        self.processing_button.setFixedSize(120, 30)
+        self.processing_button.clicked.connect(self.open_processing_window)
+        control_layout.addWidget(self.processing_button)
 
         # Горизонтальный layout для основного содержимого (виджеты игры и камеры)
         content_layout = QHBoxLayout()
@@ -170,6 +177,10 @@ class MainWindow(QMainWindow):
             seconds = self.active_seconds % 60
             self.timer_label.setText(f"{minutes:02d}:{seconds:02d}")
 
+    def open_processing_window(self):
+        """Открытие окна обработки данных"""
+        self.processing_window = ProcessingWindow(self)
+        self.processing_window.exec_()
 
     def format_time(self, seconds):
         """ Форматирование времени в формате MM:SS """
@@ -185,6 +196,7 @@ class MainWindow(QMainWindow):
                     content = f.read().strip()
                     if content.isdigit():
                         self.best_time = int(content)
+                        self.best_time_label_value.setText(self.format_time(self.best_time))
         except Exception as e:
             print(f"Error loading best time: {e}")
 
@@ -195,6 +207,13 @@ class MainWindow(QMainWindow):
                 f.write(str(self.best_time))
         except Exception as e:
             print(f"Error saving best time: {e}")
+
+    def best_time_to_file(self):
+        """ Обновление лучшего времени при завершении игры """
+        if self.active_seconds > self.best_time:
+            self.best_time = self.active_seconds
+            self.save_best_time()
+            self.best_time_label_value.setText(self.format_time(self.best_time))
 
     def show_rules(self):
         """ Отображение диалог с правилами игры """
@@ -216,13 +235,6 @@ class MainWindow(QMainWindow):
             self.active_timer.stop()
             self.cursor_widget.game_paused = True
 
-    def best_time_to_file(self):
-        """ Обновление лучшего времени при завершении игры """
-        if self.active_seconds > self.best_time:
-            self.best_time = self.active_seconds
-            self.save_best_time()
-            self.best_time_label.setText(f"Best: {self.format_time(self.best_time)}")
-
     def on_game_ended(self):
         """ Обработка завершения игры """
         self.active_timer.stop()
@@ -236,7 +248,7 @@ class MainWindow(QMainWindow):
         # Обновление лучшего времени
         if self.active_seconds > self.best_time:
             self.best_time = self.active_seconds
-            self.best_time_label.setText(f"Best: {self.format_time(self.best_time)}")
+            self.best_time_label_value.setText(self.format_time(self.best_time))
             self.best_time_to_file()
 
         # Остановка таймеров
