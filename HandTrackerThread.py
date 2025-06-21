@@ -12,6 +12,7 @@ class HandTrackerThread(QThread):
     position_updated = pyqtSignal(float, float, int)  # x, y, gesture
     frame_updated = pyqtSignal(QImage)
     landmarks_detected = pyqtSignal(bool)
+    model_loaded = pyqtSignal(bool)
 
     def __init__(self):
         super().__init__()
@@ -43,7 +44,11 @@ class HandTrackerThread(QThread):
 
 
     def run(self):
-        if not self.init_camera() or not self.load_model():
+        camera_ok = self.init_camera()
+        model_ok = self.load_model()
+        self.model_loaded.emit(model_ok)  # Отправляем сигнал о результате загрузки модели
+
+        if not camera_ok or not model_ok:
             self.running = False
             return
 

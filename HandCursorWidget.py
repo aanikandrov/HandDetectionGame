@@ -1,12 +1,16 @@
 import numpy as np
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPen, QBrush
-from PyQt5.QtWidgets import (QWidget)
+from PyQt5.QtCore import Qt, QPoint, QTimer, pyqtSignal
+from PyQt5.QtGui import QPainter, QColor, QPen, QBrush, QFont
+from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QLabel, QVBoxLayout, QApplication)
 
+from Beetle import Beetle
 from DraggableSquare import DraggableSquare
+from StaticCircle import StaticCircle
 
 
 class HandCursorWidget(QWidget):
+    restart_requested = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Hand Cursor Controller")
@@ -21,14 +25,92 @@ class HandCursorWidget(QWidget):
         self.is_trail = True            # Флаг следа
         self.trail_max_length = 20      # Максимальная длина следа
 
+        self.pink_square = DraggableSquare(300, 300, 100, QColor(255, 105, 180))
+        self.beetle = Beetle(500, 500, 40, QColor(0, 128, 0))  # Зеленый жук
+
+        self.orange_circle = StaticCircle(200,200, 50, QColor(255, 165, 0))
+
+        # Устанавливаем цель для жука
+        self.beetle.set_target(self.orange_circle)
+
         self.squares = [
-            DraggableSquare(100, 100, 100, QColor(65, 105, 225)),  # Синий
-            DraggableSquare(300, 100, 100, QColor(255, 105, 180))  # Розовый
+            DraggableSquare(10, 10, 100, QColor(65, 105, 225)),  # Синий
+            self.pink_square,
+            self.beetle
         ]
 
         self.dragging_square = None
+        self.end_game = False
+        self.end_game_timer = None
+
+        self.game_timer = QTimer()
+
+        # Убрали верхний layout с кнопками
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+
+        self.game_paused = True
+        self.game_start_time = 0
+
+        self.initial_positions = {
+            'blue_square': (100, 100),
+            'pink_square': (300, 100),
+            'beetle': (500, 500),
+            'circle': (200, 200)
+        }
+
+        self.game_end = False
+
+    def reset_game(self):
+        # Сброс позиций объектов
+        self.squares[0].x, self.squares[0].y = self.initial_positions['blue_square']
+        self.squares[1].x, self.squares[1].y = self.initial_positions['pink_square']
+        self.squares[2].x, self.squares[2].y = self.initial_positions['beetle']
+        self.orange_circle.x, self.orange_circle.y = self.initial_positions['circle']
+
+        # Сброс состояния игры
+        self.game_end = False
+        self.end_game = False
+        self.dragging_square = None
+
+        # Сброс следа курсора
+        self.trail_positions = []
+        self.trail_colors = []
+
+        # Сброс позиции курсора
+        self.cursor_pos = [0.5, 0.5]
+
+        self.update()
+
 
     def update_cursor_position(self, x, y, gesture):
+        # Всегда обновляем позицию курсора, даже на паузе
+        self.cursor_pos = [x, y]
+        self.gesture = gesture
+        self.hand_detected = True
+
+        # Добавляем точку в след (если включен)
+        if self.is_trail:
+            color = QColor(255, 0, 0) if gesture == 0 else QColor(0, 255, 0)
+            self.trail_positions.append((x * self.width(), y * self.height()))
+            self.trail_colors.append(color)
+
+            if len(self.trail_positions) > self.trail_max_length:
+                self.trail_positions.pop(0)
+                self.trail_colors.pop(0)
+
+        # Если игра на паузе или завершена - только обновляем курсор
+        if self.end_game or self.game_paused:
+            self.update()
+            return
+
+        if gesture == 0:  # Кулак
+            if self.game_timer.isActive():
+                self.game_timer.stop()
+        else:
+            if not self.game_timer.isActive() and not self.game_paused:
+                self.game_timer.start(1000)  # 1 секунда
+
         # Абсолютные координаты курсора
         abs_x = x * self.width()
         abs_y = y * self.height()
@@ -61,18 +143,11 @@ class HandCursorWidget(QWidget):
                 self.dragging_square.dragging = False
                 self.dragging_square = None
 
-        self.cursor_pos = [x, y]
-        self.gesture = gesture
-        self.hand_detected = True
+        if gesture != 1:  # Только когда не зажато
+            self.beetle.move_towards_target()
 
-        if self.is_trail:
-            color = QColor(255, 0, 0) if gesture == 0 else QColor(0, 255, 0)
-            self.trail_positions.append((x * self.width(), y * self.height()))
-            self.trail_colors.append(color)
-
-            if len(self.trail_positions) > self.trail_max_length:
-                self.trail_positions.pop(0)
-                self.trail_colors.pop(0)
+        if not self.end_game and self.check_circle_collision(self.beetle, self.orange_circle):
+            self.show_end_game()
 
         # Обрабатываем столкновения со стенами
         self.resolve_wall_collisions()
@@ -101,14 +176,24 @@ class HandCursorWidget(QWidget):
             self.ensure_square_in_bounds(square)
 
     def resolve_collisions(self):
-        # Проверяем все пары квадратов
+        # Проверяем все пары объектов
         for i in range(len(self.squares)):
             for j in range(i + 1, len(self.squares)):
-                square1 = self.squares[i]
-                square2 = self.squares[j]
+                obj1 = self.squares[i]
+                obj2 = self.squares[j]
 
-                if self.check_collision(square1, square2):
-                    self.push_squares_apart(square1, square2)
+                # Проверяем столкновение только между квадратами
+                if isinstance(obj1, Beetle) and isinstance(obj2, Beetle):
+                    continue
+
+                if self.check_collision(obj1, obj2):
+                    self.push_objects_apart(obj1, obj2)
+
+        # Проверяем столкновения квадратов с кругом
+        for square in self.squares:
+            if not isinstance(square, Beetle):  # Не проверяем столкновение жука с кругом
+                if self.check_square_circle_collision(square, self.orange_circle):
+                    self.push_square_from_circle(square, self.orange_circle)
 
     def check_collision(self, square1, square2):
         # Проверяем пересечение по осям X и Y
@@ -117,7 +202,93 @@ class HandCursorWidget(QWidget):
                 square1.y < square2.y + square2.size and
                 square1.y + square1.size > square2.y)
 
-    def push_squares_apart(self, square1, square2):
+    def check_square_circle_collision(self, square, circle):
+        """Проверяет столкновение квадрата и круга"""
+        # Находим ближайшую точку на квадрате к центру круга
+        closest_x = max(square.x, min(circle.x, square.x + square.size))
+        closest_y = max(square.y, min(circle.y, square.y + square.size))
+
+        # Расстояние между ближайшей точкой и центром круга
+        distance = ((circle.x - closest_x) ** 2 + (circle.y - closest_y) ** 2) ** 0.5
+
+        return distance < circle.radius
+
+    def push_square_from_circle(self, square, circle):
+        """Отталкивает квадрат от круга"""
+        if square.dragging:
+            return  # Не отталкиваем перетаскиваемый квадрат
+
+        # Вектор от центра круга к центру квадрата
+        square_center = square.get_center()
+        circle_center = circle.get_center()
+
+        dx = square_center.x() - circle_center.x()
+        dy = square_center.y() - circle_center.y()
+
+        # Если центры совпадают, добавляем случайное смещение
+        if abs(dx) < 1e-5 and abs(dy) < 1e-5:
+            dx = (np.random.rand() - 0.5) * 10
+            dy = (np.random.rand() - 0.5) * 10
+
+        # Нормализуем вектор
+        length = max(1e-5, (dx ** 2 + dy ** 2) ** 0.5)
+        dx /= length
+        dy /= length
+
+        # Минимальное расстояние (радиус круга + половина диагонали квадрата)
+        min_distance = circle.radius + (square.size * 0.7)
+
+        # Текущее расстояние между центрами
+        current_distance = ((square_center.x() - circle_center.x()) ** 2 +
+                            (square_center.y() - circle_center.y()) ** 2) ** 0.5
+
+        # Если объекты пересекаются, отталкиваем квадрат
+        if current_distance < min_distance:
+            # Сила отталкивания
+            force = (min_distance - current_distance) * 0.7
+
+            # Смещаем квадрат от круга
+            square.x += dx * force
+            square.y += dy * force
+
+    def check_circle_collision(self, beetle, circle):
+        # Проверяем столкновение по расстоянию между центрами
+        beetle_center = beetle.get_center()
+        circle_center = circle.get_center()
+
+        dx = circle_center.x() - beetle_center.x()
+        dy = circle_center.y() - beetle_center.y()
+        distance = (dx ** 2 + dy ** 2) ** 0.5
+
+        # Сумма радиусов (для жука берем половину размера как радиус)
+        min_distance = beetle.size / 2 + circle.radius
+
+        return distance < min_distance
+
+    def show_end_game(self):
+        self.game_end = True
+        self.end_game = True
+        self.update()
+
+        # Запускаем таймер для запроса рестарта через 3 секунды
+        self.end_game_timer = QTimer(self)
+        self.end_game_timer.setSingleShot(True)
+        self.end_game_timer.timeout.connect(self.restart_requested.emit)
+        self.end_game_timer.start(3000)
+
+    def close_application(self):
+        self.end_game_timer.stop()
+
+        # Закрываем главное окно
+        main_window = self.window()
+        if main_window:
+            main_window.close()
+
+        QApplication.quit()
+
+
+
+    def push_objects_apart(self, square1, square2):
         # Рассчитываем вектор между центрами
         center1 = square1.get_center()
         center2 = square2.get_center()
@@ -183,6 +354,9 @@ class HandCursorWidget(QWidget):
                 y2 = int(self.trail_positions[i][1])
                 painter.drawLine(x1, y1, x2, y2)
 
+        # Отрисовка оранжевого круга
+        self.orange_circle.draw(painter)
+
         # Отрисовка квадратов
         for square in self.squares:
             square.draw(painter)
@@ -206,3 +380,8 @@ class HandCursorWidget(QWidget):
             # Отрисовка центральной точки
             painter.setBrush(QColor(255, 255, 255))
             painter.drawEllipse(QPoint(x, y), 5, 5)
+
+        if self.game_end:
+            painter.setPen(QColor(255, 0, 0))
+            painter.setFont(QFont('Arial', 48, QFont.Bold))
+            painter.drawText(self.rect(), Qt.AlignCenter, "GAME END")
