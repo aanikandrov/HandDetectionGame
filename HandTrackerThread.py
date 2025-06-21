@@ -76,6 +76,10 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5    # Мин порог доверия отслеживания
         )
 
+        self.pixel_size = 0 # 8 сильный эффект
+                            # 0 нет эффекта
+        # TODO вынести в настройки
+
         try:
             while self.running:
                 ret, frame = self.cap.read()
@@ -87,6 +91,22 @@ class HandTrackerThread(QThread):
                 # Размеры кадра
                 H, W, _ = frame.shape
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # Применение пиксельного эффекта
+                if self.pixel_size > 1:
+                    small = cv2.resize(
+                        frame,
+                        (frame.shape[1] // self.pixel_size,
+                         frame.shape[0] // self.pixel_size),
+                        interpolation=cv2.INTER_NEAREST
+                    )
+                    pixel_frame = cv2.resize(
+                        small,
+                        (frame.shape[1], frame.shape[0]),
+                        interpolation=cv2.INTER_NEAREST
+                    )
+                else:
+                    pixel_frame = frame
 
                 # Обнаружение руки
                 results = self.hands.process(frame_rgb)
@@ -140,9 +160,15 @@ class HandTrackerThread(QThread):
                     self.landmarks_detected.emit(False)
 
                 # Конвертация и отправка кадра
-                h, w, ch = frame.shape
+                h, w, ch = pixel_frame.shape
                 bytes_per_line = ch * w
-                qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_BGR888)
+                qt_image = QImage(
+                    pixel_frame.data,
+                    w,
+                    h,
+                    bytes_per_line,
+                    QImage.Format_BGR888
+                )
                 self.frame_updated.emit(qt_image)
 
         finally:
