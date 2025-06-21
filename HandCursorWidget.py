@@ -1,21 +1,22 @@
 import numpy as np
 from PyQt5.QtCore import Qt, QPoint, QTimer, pyqtSignal
-from PyQt5.QtGui import QPainter, QColor, QPen, QBrush, QFont
-from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QLabel, QVBoxLayout, QApplication)
+from PyQt5.QtGui import QPainter, QColor, QPen, QFont
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QApplication)
 
-from Beetle import Beetle
-from DraggableSquare import DraggableSquare
-from StaticCircle import StaticCircle
-
+from Objects.ObjectWithTarget import ObjectWithTarget
+from Objects.DraggableObject import DraggableObject
+from Objects.StaticCircle import StaticCircle
+from Objects.DraggableSquare import DraggableSquare
 
 class HandCursorWidget(QWidget):
     restart_requested = pyqtSignal()
+    game_ended = pyqtSignal()
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Hand Cursor Controller")
         self.setStyleSheet("background-color: #f0f0f0; border: 2px solid #404040;")
-        self.setFixedSize(500, 500)
+        self.setFixedSize(1000, 1000)
         self.cursor_pos = [0.5, 0.5]
         self.hand_detected = False
         self.gesture = 0  # 0: palm, 1: fist
@@ -25,46 +26,45 @@ class HandCursorWidget(QWidget):
         self.is_trail = True            # Флаг следа
         self.trail_max_length = 20      # Максимальная длина следа
 
+        self.dragging_square = None
+        self.end_game = False
+        self.end_game_timer = None
+        self.game_paused = True
+        self.game_start_time = 0
+        self.game_end = False
+
         self.initial_positions = {
             'blue_square': (10, 10),
             'pink_square': (300, 100),
             'beetle': (400, 400),
-            'circle': (200, 200)
+            'beetle2': (100, 400),
+            'circle': (200, 60)
         }
 
         blue_pos = self.initial_positions['blue_square']
         pink_pos = self.initial_positions['pink_square']
         beetle_pos = self.initial_positions['beetle']
+        beetle2_pos = self.initial_positions['beetle2']
         circle_pos = self.initial_positions['circle']
 
         self.pink_square = DraggableSquare(pink_pos[0], pink_pos[1], 100, QColor(255, 105, 180))
-        self.beetle = Beetle(beetle_pos[0], beetle_pos[1], 40, QColor(0, 128, 0))
+        self.beetle = ObjectWithTarget(beetle_pos[0], beetle_pos[1], 40, QColor(0, 128, 0))
+        self.beetle2 = ObjectWithTarget(beetle2_pos[0], beetle2_pos[1], 40, QColor(0, 180, 0))
         self.orange_circle = StaticCircle(circle_pos[0], circle_pos[1], 50, QColor(255, 165, 0))
 
         self.squares = [
             DraggableSquare(blue_pos[0], blue_pos[1], 100, QColor(65, 105, 225)),
             self.pink_square,
-            self.beetle
+            self.beetle,
+            self.beetle2
         ]
 
         self.beetle.set_target(self.orange_circle)
-
-        self.dragging_square = None
-        self.end_game = False
-        self.end_game_timer = None
+        self.beetle2.set_target(self.orange_circle)
 
         self.game_timer = QTimer()
-
-        # Убрали верхний layout с кнопками
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
-
-        self.game_paused = True
-        self.game_start_time = 0
-
-
-
-        self.game_end = False
 
     def reset_game(self):
         # Сброс позиций объектов
@@ -73,9 +73,11 @@ class HandCursorWidget(QWidget):
         self.squares[2].x, self.squares[2].y = self.initial_positions['beetle']
         self.orange_circle.x, self.orange_circle.y = self.initial_positions['circle']
 
+        self.beetle2.x, self.beetle2.y = self.initial_positions['beetle2']
+
         # Сброс состояния игры
-        self.game_end = False
         self.end_game = False
+        self.game_end = False
         self.dragging_square = None
 
         # Сброс следа курсора
@@ -84,6 +86,9 @@ class HandCursorWidget(QWidget):
 
         # Сброс позиции курсора
         self.cursor_pos = [0.5, 0.5]
+
+        # Ставим игру на паузу после рестарта
+        self.game_paused = True
 
         self.update()
 
@@ -148,10 +153,14 @@ class HandCursorWidget(QWidget):
                 self.dragging_square.dragging = False
                 self.dragging_square = None
 
-        if gesture != 1:  # Только когда не зажато
+        if gesture != 1:
             self.beetle.move_towards_target()
+            self.beetle2.move_towards_target()
 
-        if not self.end_game and self.check_circle_collision(self.beetle, self.orange_circle):
+        if not self.end_game and (
+                self.check_circle_collision(self.beetle, self.orange_circle) or
+                self.check_circle_collision(self.beetle2, self.orange_circle)
+        ):
             self.show_end_game()
 
         # Обрабатываем столкновения со стенами
@@ -188,7 +197,7 @@ class HandCursorWidget(QWidget):
                 obj2 = self.squares[j]
 
                 # Проверяем столкновение только между квадратами
-                if isinstance(obj1, Beetle) and isinstance(obj2, Beetle):
+                if isinstance(obj1, ObjectWithTarget) and isinstance(obj2, ObjectWithTarget):
                     continue
 
                 if self.check_collision(obj1, obj2):
@@ -196,7 +205,7 @@ class HandCursorWidget(QWidget):
 
         # Проверяем столкновения квадратов с кругом
         for square in self.squares:
-            if not isinstance(square, Beetle):  # Не проверяем столкновение жука с кругом
+            if not isinstance(square, ObjectWithTarget):  # Не проверяем столкновение жука с кругом
                 if self.check_square_circle_collision(square, self.orange_circle):
                     self.push_square_from_circle(square, self.orange_circle)
 
@@ -273,18 +282,30 @@ class HandCursorWidget(QWidget):
     def show_end_game(self):
         self.game_end = True
         self.end_game = True
+        self.game_paused = True
+        self.game_ended.emit()
+
         self.update()
 
-        # Запускаем таймер для запроса рестарта через 3 секунды
+        if self.game_timer.isActive():
+            self.game_timer.stop()
+
+        if hasattr(self, 'end_game_timer') and self.end_game_timer:
+            self.end_game_timer.stop()
+
+
+
+
+
         self.end_game_timer = QTimer(self)
         self.end_game_timer.setSingleShot(True)
         self.end_game_timer.timeout.connect(self.restart_requested.emit)
+        self.end_game_timer.timeout.connect(self.reset_game)
         self.end_game_timer.start(3000)
 
     def close_application(self):
         self.end_game_timer.stop()
 
-        # Закрываем главное окно
         main_window = self.window()
         if main_window:
             main_window.close()

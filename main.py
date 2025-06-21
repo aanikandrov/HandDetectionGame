@@ -30,8 +30,8 @@ class MainWindow(QMainWindow):
         self.start_pause_button = QPushButton("Start")
         self.start_pause_button.setFixedSize(100, 30)
         self.start_pause_button.clicked.connect(self.toggle_pause)
-        # Изначально кнопка недоступна
         self.start_pause_button.setEnabled(False)
+
 
         # Таймер для увеличения скорости
         self.speed_increase_timer = QTimer(self)
@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
         self.restart_button = QPushButton("Restart")
         self.restart_button.setFixedSize(100, 30)
         self.restart_button.clicked.connect(self.restart_game)
+        self.restart_button.setEnabled(False)
         control_layout.addWidget(self.restart_button)
 
 
@@ -75,11 +76,12 @@ class MainWindow(QMainWindow):
 
         # Виджет курсора (игровое поле)
         self.cursor_widget = HandCursorWidget()
-        self.cursor_widget.setFixedSize(500, 500)
+        self.cursor_widget.setFixedSize(800, 800)
         content_layout.addWidget(self.cursor_widget)
 
         self.active_seconds = 0
         self.current_gesture = 1
+        self.hand_detected = False
 
         # Виджет камеры
         self.camera_widget = QLabel()
@@ -99,8 +101,10 @@ class MainWindow(QMainWindow):
         self.tracker_thread.landmarks_detected.connect(self.cursor_widget.set_hand_detected)
         self.tracker_thread.frame_updated.connect(self.update_camera)
         self.tracker_thread.start()
+
         # Подключаем новый сигнал
-        self.tracker_thread.model_loaded.connect(self.enable_start_button)
+        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
+
 
         # Инициализация таймера игры
         self.game_paused = True
@@ -109,8 +113,17 @@ class MainWindow(QMainWindow):
         self.active_timer.setInterval(1000)
         self.active_timer.timeout.connect(self.update_active_timer)
 
+        self.cursor_widget.game_ended.connect(self.on_game_ended)
+        self.tracker_thread.tracker_ready.connect(self.enable_start_button)
+        self.tracker_thread.landmarks_detected.connect(self.set_hand_detected)
+
+    def set_hand_detected(self, detected):
+        self.hand_detected = detected
+
     def update_active_timer(self):
-        if not self.game_paused and self.current_gesture == 0:
+        if (not self.game_paused and
+                self.current_gesture == 0 and
+                self.hand_detected):
             self.active_seconds += 1
             minutes = self.active_seconds // 60
             seconds = self.active_seconds % 60
@@ -132,6 +145,12 @@ class MainWindow(QMainWindow):
             self.active_timer.stop()
             self.cursor_widget.game_paused = True  # Обновляем состояние в виджете
 
+    def on_game_ended(self):
+        self.active_timer.stop()
+        self.speed_increase_timer.stop()
+        self.game_paused = True
+        self.start_pause_button.setText("Start")
+
     def restart_game(self):
         # Сброс таймера
         self.active_seconds = 0
@@ -144,24 +163,30 @@ class MainWindow(QMainWindow):
 
         # Остановка таймеров
         self.speed_increase_timer.stop()
+        self.active_timer.stop()
 
         # Сброс виджета игры
         self.cursor_widget.reset_game()
 
         # Сброс скорости жука
         self.cursor_widget.beetle.speed = 1
+        self.cursor_widget.beetle2.speed = 1
         self.speed_spinbox.setValue(1)
 
     def enable_start_button(self, model_loaded):
         self.start_pause_button.setEnabled(model_loaded)
+        self.restart_button.setEnabled(model_loaded)
 
     def increase_beetle_speed(self):
         # Увеличиваем скорость только при ладони (gesture == 0)
-        if not self.game_paused and self.current_gesture == 0:
+        if (not self.game_paused and
+                self.current_gesture == 0 and
+                self.hand_detected):
             current_speed = self.cursor_widget.beetle.speed
             if current_speed < 10:
                 new_speed = current_speed + 1
                 self.cursor_widget.beetle.speed = new_speed
+                self.cursor_widget.beetle2.speed = new_speed
                 self.speed_spinbox.setValue(new_speed)
 
     def update_cursor_position_from_tracker(self, x, y, gesture):
@@ -170,6 +195,7 @@ class MainWindow(QMainWindow):
 
     def update_beetle_speed(self, speed):
         self.cursor_widget.beetle.speed = speed
+        self.cursor_widget.beetle2.speed = speed
 
     def update_camera(self, image):
         pixmap = QPixmap.fromImage(image)

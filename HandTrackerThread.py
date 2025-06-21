@@ -5,14 +5,11 @@ from PyQt5.QtGui import QImage
 
 import time # для FPS
 
-
-
-
 class HandTrackerThread(QThread):
     position_updated = pyqtSignal(float, float, int)  # x, y, gesture
     frame_updated = pyqtSignal(QImage)
     landmarks_detected = pyqtSignal(bool)
-    model_loaded = pyqtSignal(bool)
+    tracker_ready = pyqtSignal(bool)
 
     def __init__(self):
         super().__init__()
@@ -46,7 +43,7 @@ class HandTrackerThread(QThread):
     def run(self):
         camera_ok = self.init_camera()
         model_ok = self.load_model()
-        self.model_loaded.emit(model_ok)  # Отправляем сигнал о результате загрузки модели
+        self.tracker_ready.emit(camera_ok and model_ok)
 
         if not camera_ok or not model_ok:
             self.running = False
@@ -60,12 +57,7 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5
         )
 
-        frame_time = 1.0 / self.FPS
-
         while self.running:
-
-            start_time = time.time()
-
             ret, frame = self.cap.read()
             frame = cv2.flip(frame, 1)
             if not ret:
