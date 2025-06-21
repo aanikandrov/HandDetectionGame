@@ -12,7 +12,7 @@ class StaticCircle(GameObject):
         self.radius = radius
 
 
-        texture_path = os.path.join('Images\earth.png')
+        texture_path = os.path.join('Images\pix-earth.png')
 
         # Загружаем текстуру с проверкой
         self.texture = QPixmap()

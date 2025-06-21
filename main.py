@@ -80,121 +80,135 @@ class MainWindow(QMainWindow):
         self.game_paused = True
 
         # Центральный виджет
+        # Центральный виджет
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Главный вертикальный layout
-        main_vertical_layout = QVBoxLayout(central_widget)
-        main_vertical_layout.setContentsMargins(10, 10, 10, 10)
+        # Главный горизонтальный layout (игра слева, панель справа)
+        main_horizontal_layout = QHBoxLayout(central_widget)
+        main_horizontal_layout.setContentsMargins(10, 10, 10, 10)
+        main_horizontal_layout.setSpacing(20)
 
-        # Панель управления (верхняя панель)
-        control_panel = QWidget()
-        control_layout = QHBoxLayout(control_panel)
-        control_layout.setContentsMargins(5, 5, 5, 5)
-        control_layout.addStretch()
+        # Виджет игрового поля (слева)
+        self.cursor_widget = HandCursorWidget()
+        self.cursor_widget.setFixedSize(800, 800)
+        main_horizontal_layout.addWidget(self.cursor_widget)
+
+        # Вертикальный контейнер для правой панели
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(15)
+
+        # Контейнер для кнопок управления (Start, Restart)
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+        button_layout.setContentsMargins(0, 0, 0, 0)
 
         # Кнопка старт/пауза
         self.start_pause_button = QPushButton("Start")
-        self.start_pause_button.setFixedSize(100, 30)
+        self.start_pause_button.setFixedHeight(40)
         self.start_pause_button.clicked.connect(self.toggle_pause)
         self.start_pause_button.setEnabled(False)
         self.start_pause_button.setToolTip("Поставить на паузу/продолжить")
-        control_layout.addWidget(self.start_pause_button)
+        button_layout.addWidget(self.start_pause_button)
 
         # Кнопка перезапуска игры
         self.restart_button = QPushButton("Restart")
-        self.restart_button.setFixedSize(100, 30)
+        self.restart_button.setFixedHeight(40)
         self.restart_button.clicked.connect(self.restart_game)
         self.restart_button.setEnabled(False)
         self.restart_button.setToolTip("Начать игру заново")
-        control_layout.addWidget(self.restart_button)
+        button_layout.addWidget(self.restart_button)
+
+        right_layout.addWidget(button_container)
+
+        # Контейнер для таймера и скорости
+        timer_speed_container = QWidget()
+        timer_speed_layout = QHBoxLayout(timer_speed_container)
+        timer_speed_layout.setContentsMargins(0, 0, 0, 0)
 
         # Таймер
+        timer_container = QWidget()
+        timer_v_layout = QVBoxLayout(timer_container)
+        timer_label = QLabel("Game Time:")
+        timer_label.setStyleSheet("font-weight: bold; color: #ff8800;")
         self.timer_label = QLabel("00:00")
         self.timer_label.setObjectName("TimerLabel")
         self.timer_label.setAlignment(Qt.AlignCenter)
-        self.timer_label.setFixedSize(100, 30)
-        self.timer_label.setToolTip("Текущее время")
-        control_layout.addWidget(self.timer_label)
-
-        # Таймер для увеличения скорости
-        self.speed_increase_timer = QTimer(self)
-        self.speed_increase_timer.setInterval(5000)  # 5 секунд
-        self.speed_increase_timer.timeout.connect(self.increase_beetle_speed)
+        self.timer_label.setFixedHeight(40)
+        timer_v_layout.addWidget(timer_label)
+        timer_v_layout.addWidget(self.timer_label)
+        timer_speed_layout.addWidget(timer_container)
 
         # Элементы управления скоростью
+        speed_container = QWidget()
+        speed_v_layout = QVBoxLayout(speed_container)
         speed_label = QLabel("Enemy Speed:")
-        control_layout.addWidget(speed_label)
+        speed_label.setStyleSheet("font-weight: bold; color: #ff8800;")
         self.speed_spinbox = QSpinBox()
         self.speed_spinbox.setRange(1, 15)
         self.speed_spinbox.setValue(1)
         self.speed_spinbox.valueChanged.connect(self.update_beetle_speed)
         self.speed_spinbox.setDisabled(True)
-        self.speed_spinbox.setToolTip("Скорость астероидов")
-        control_layout.addWidget(self.speed_spinbox)
+        self.speed_spinbox.setFixedHeight(40)
+        speed_v_layout.addWidget(speed_label)
+        speed_v_layout.addWidget(self.speed_spinbox)
+        timer_speed_layout.addWidget(speed_container)
 
-        # Вывод лучшего времени
-        self.best_time_label_text = QLabel("Best:")
-        self.best_time_label_text.setFont(QFont('Arial', 16))
-        control_layout.addWidget(self.best_time_label_text)
+        right_layout.addWidget(timer_speed_container)
 
+        # Контейнер для лучшего времени и правил
+        best_rules_container = QWidget()
+        best_rules_layout = QHBoxLayout(best_rules_container)
+        best_rules_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Лучшее время
+        best_time_container = QWidget()
+        best_time_v_layout = QVBoxLayout(best_time_container)
+        best_time_label = QLabel("Best Time:")
+        best_time_label.setStyleSheet("font-weight: bold; color: #ff8800;")
         self.best_time_label_value = QLabel("00:00")
-        self.best_time_label_value.setFont(QFont('Arial', 16))
-        self.best_time_label_value.setStyleSheet("background-color: #e0e0ff; border: 1px solid gray;")
-        self.best_time_label_value.setFixedSize(130, 40)
-        self.best_time_label_value.setToolTip("Лучшее время")
-        control_layout.addWidget(self.best_time_label_value)
+        self.best_time_label_value.setObjectName("BestTimeLabel")
+        self.best_time_label_value.setAlignment(Qt.AlignCenter)
+        self.best_time_label_value.setFixedHeight(40)
+        best_time_v_layout.addWidget(best_time_label)
+        best_time_v_layout.addWidget(self.best_time_label_value)
+        best_rules_layout.addWidget(best_time_container)
 
-        # Кнопка вывода правил
+        # Кнопка правил
         self.rules_button = QPushButton("?")
-        self.rules_button.setFixedSize(40, 40)
+        self.rules_button.setFixedSize(60, 60)
+        self.rules_button.setStyleSheet("font-size: 24px; font-weight: bold;")
         self.rules_button.setToolTip("Показать правила игры")
         self.rules_button.clicked.connect(self.show_rules)
-        control_layout.addWidget(self.rules_button)
+        best_rules_layout.addWidget(self.rules_button)
 
-        # Добавляем панель управления в главный layout
-        main_vertical_layout.addWidget(control_panel)
+        right_layout.addWidget(best_rules_container)
 
-        # Кнопка вызова окна обработки данных
+        # Кнопка обработки данных
         self.processing_button = QPushButton("Обработка данных")
-        self.processing_button.setFixedSize(120, 30)
+        self.processing_button.setFixedHeight(50)
         self.processing_button.clicked.connect(self.open_processing_window)
-        control_layout.addWidget(self.processing_button)
-
-        # Горизонтальный layout для основного содержимого (виджеты игры и камеры)
-        content_layout = QHBoxLayout()
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(10)
-
-        # Виджет курсора (игровое поле)
-        self.cursor_widget = HandCursorWidget()
-        self.cursor_widget.setFixedSize(800, 800)
-        content_layout.addWidget(self.cursor_widget)
-
-        # Вертикальный контейнер для правой колонки (камера + текст)
-        right_column = QWidget()
-        right_layout = QVBoxLayout(right_column)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(5)
-        right_layout.addStretch(1)
+        right_layout.addWidget(self.processing_button)
 
         # Виджет камеры
         self.camera_widget = QLabel()
         self.camera_widget.setStyleSheet("""
-                    border: 2px solid #ff8800;  /* Оранжевая рамка */
-                    background-color: #000033;  /* Темно-синий фон */
+                    border: 3px solid #ff8800;
+                    background-color: #000033;
                     color: white;
                     font-size: 16pt;
                     qproperty-alignment: AlignCenter;
                 """)
-        self.camera_widget.setFixedSize(500, 500)
+        self.camera_widget.setFixedSize(400, 400)
         right_layout.addWidget(self.camera_widget)
 
         # Добавляем правую колонку в основной layout
-        content_layout.addWidget(right_column, alignment=Qt.AlignBottom)
+        main_horizontal_layout.addWidget(right_panel)
 
         # Добавляем содержимое в главный layout
-        main_vertical_layout.addLayout(content_layout)
+        # main_vertical_layout.addLayout(content_layout)
 
         # Thread для отслеживания руки
         self.tracker_thread = HandTrackerThread()
@@ -214,6 +228,20 @@ class MainWindow(QMainWindow):
         # Сигналы виджета
         self.cursor_widget.restart_requested.connect(self.restart_game)
         self.cursor_widget.game_ended.connect(self.on_game_ended)
+
+        # control_layout.addWidget(self.start_pause_button)
+        # control_layout.addWidget(self.restart_button)
+        # control_layout.addWidget(self.timer_label)
+        # control_layout.addWidget(speed_label)
+        # control_layout.addWidget(self.speed_spinbox)
+        # control_layout.addWidget(self.best_time_label_text)
+        # control_layout.addWidget(self.best_time_label_value)
+        # control_layout.addWidget(self.rules_button)
+        # control_layout.addWidget(self.processing_button)
+        # right_layout.addWidget(control_panel)
+        # right_layout.addWidget(self.camera_widget)
+        # content_layout.addWidget(right_column, alignment=Qt.AlignTop)
+        # main_vertical_layout.addLayout(content_layout)
 
         # Загрузка лучшего времени из файла
         self.load_best_time()

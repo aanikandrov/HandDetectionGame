@@ -10,7 +10,7 @@ class DraggableSquare(DraggableObject):
         super().__init__(x, y, size, color)
 
         # Текстура из файла
-        texture_path = os.path.join('Images/block.png')
+        texture_path = os.path.join('Images/pix-block.png')
         self.texture = QPixmap()
 
         if not self.texture.load(texture_path):

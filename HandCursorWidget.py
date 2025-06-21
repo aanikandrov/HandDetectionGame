@@ -433,5 +433,5 @@ class HandCursorWidget(QWidget):
 
         if self.game_end:
             painter.setPen(QColor(255, 0, 0))
-            painter.setFont(QFont('Arial', 48, QFont.Bold))
-            painter.drawText(self.rect(), Qt.AlignCenter, "GAME END")
+            painter.setFont(QFont('Courier New', 48, QFont.Bold))
+            painter.drawText(self.rect(), Qt.AlignCenter, "GAME OVER")
