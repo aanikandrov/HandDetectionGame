@@ -28,8 +28,17 @@ class HandTrackerThread(QThread):
         # (palm - ладонь, fist - кулак)
         self.last_gesture = 0  # Последний распознанный жест
 
+    # HandTrackerThread.py
     def init_camera(self):
         """ Инициализация камеры"""
+        # Попробуем освободить камеру перед открытием
+        try:
+            temp_cap = cv2.VideoCapture(0)
+            if temp_cap.isOpened():
+                temp_cap.release()
+        except:
+            pass
+
         self.cap = cv2.VideoCapture(0)
 
         if not self.cap.isOpened():
@@ -155,7 +164,7 @@ class HandTrackerThread(QThread):
                     # Отрисовка курсора
                     circle_color = (0, 0, 255) if gesture == 0 else (0, 255, 0)  # red/green
                     circle_size = 20 if gesture == 0 else 10  # red/green
-                    cv2.circle(frame, (cx, cy), circle_size, circle_color, -1)
+                    cv2.circle(pixel_frame, (cx, cy), circle_size, circle_color, -1)
                 else:
                     self.landmarks_detected.emit(False)
 
@@ -188,4 +197,11 @@ class HandTrackerThread(QThread):
         """ Остановка потока трекера руки """
         self.running = False
         if self.isRunning():
-            self.wait(1000)
+            self.wait(3000)
+
+        if self.cap and self.cap.isOpened():
+            try:
+                self.cap.release()
+                print("Camera explicitly released in stop()")
+            except Exception as e:
+                print(f"Error releasing camera in stop(): {e}")

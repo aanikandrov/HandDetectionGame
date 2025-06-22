@@ -93,17 +93,42 @@ class ProcessingWindow(QDialog):
             self.instruction_label.setText("Все шаги успешно выполнены")
 
     def start_processing(self):
-        """Запуск процесса обработки данных"""
-        self.start_button.setEnabled(False)
-        self.cancel_button.setEnabled(False)
-        self.log_text.clear()
+        try:
+            """Запуск процесса обработки данных"""
+            self.start_button.setEnabled(False)
+            self.cancel_button.setEnabled(False)
+            self.log_text.clear()
 
-        # Создаем и запускаем поток обработки
-        self.processing_thread = ProcessingThread(self.current_step)
-        self.processing_thread.progress_updated.connect(self.update_progress)
-        self.processing_thread.log_message.connect(self.log_message)
-        self.processing_thread.step_completed.connect(self.step_completed)
-        self.processing_thread.start()
+            # Проверяем, не существует ли предыдущий поток
+            if hasattr(self, 'processing_thread') and self.processing_thread:
+                try:
+                    if self.processing_thread.isRunning():
+                        self.processing_thread.cancel()
+                        self.processing_thread.wait(3000)
+                except:
+                    pass
+
+            # Создаем и запускаем поток обработки
+            self.processing_thread = ProcessingThread(self.current_step)
+            self.processing_thread.progress_updated.connect(self.update_progress)
+            self.processing_thread.log_message.connect(self.log_message)
+            self.processing_thread.step_completed.connect(self.step_completed)
+            self.processing_thread.start()
+        except Exception as e:
+            error_msg = f"Fatal error in processing window: {str(e)}"
+            self.log_message.emit(error_msg)
+
+            if "access violation" in str(e).lower():
+                self.log_message.emit("Critical memory error detected!")
+                self.log_message.emit("Recommendations:")
+                self.log_message.emit("- Update camera drivers")
+                self.log_message.emit("- Close other camera applications")
+                self.log_message.emit("- Reinstall MediaPipe: pip install --upgrade mediapipe")
+                self.log_message.emit("Попробуйте перезапустить приложение")
+                self.log_message.emit("Если ошибка повторяется, проверьте камеру в других приложениях")
+
+            self.start_button.setEnabled(True)
+            self.cancel_button.setEnabled(True)
 
     def update_progress(self, value):
         """Обновление прогресс-бара"""

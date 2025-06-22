@@ -1,6 +1,7 @@
 import os
 import sys
 
+import cv2
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
@@ -255,18 +256,28 @@ class MainWindow(QMainWindow):
     def stop_tracker(self):
         if self.tracker_thread.isRunning():
             self.tracker_thread.stop()
-            # Убрали ожидание здесь, так как оно уже в stop()
 
-            # Очищаем виджет камеры
-            self.camera_widget.clear()
-            self.camera_widget.setText("Камера используется в окне обработки")
-            self.camera_widget.setStyleSheet("""
-                    border: 2px solid #404040; 
-                    background-color: #333;
-                    color: white;
-                    font-size: 16pt;
-                    qproperty-alignment: AlignCenter;
-                """)
+        # Дополнительная очистка ресурсов OpenCV
+        try:
+            cv2.destroyAllWindows()
+            # Явное освобождение камеры через временный объект
+            temp_cap = cv2.VideoCapture(0)
+            if temp_cap.isOpened():
+                temp_cap.release()
+                print("Camera force-released in main thread")
+        except Exception as e:
+            print(f"Camera force-release error: {e}")
+
+        # Очищаем виджет камеры
+        self.camera_widget.clear()
+        self.camera_widget.setText("Камера используется в окне обработки")
+        self.camera_widget.setStyleSheet("""
+                border: 2px solid #404040; 
+                background-color: #333;
+                color: white;
+                font-size: 16pt;
+                qproperty-alignment: AlignCenter;
+            """)
 
     def restart_tracker(self):
         """Перезапуск потока трекера руки"""
@@ -281,11 +292,17 @@ class MainWindow(QMainWindow):
 
     def open_processing_window(self):
         """Открытие окна обработки данных"""
-        # Останавливаем трекер руки перед открытием окна
-        self.stop_tracker()
+        try:
+            print("Stopping tracker...")
+            self.stop_tracker()
 
-        # Задержка для полного освобождения ресурсов
-        QTimer.singleShot(1500, self._open_processing_window)
+            # Увеличиваем задержку до 5 секунд
+            print("Waiting for resources release...")
+            QTimer.singleShot(5000, self._open_processing_window)
+        except Exception as e:
+            print(f"Error opening processing window: {e}")
+            # Попытка восстановить трекер
+            self.restart_tracker()
 
     def _open_processing_window(self):
         self.processing_window = ProcessingWindow(self)
