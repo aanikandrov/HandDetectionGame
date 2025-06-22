@@ -191,7 +191,6 @@ class HandTrackerThread(QThread):
             print(f"Unexpected error in tracker thread: {e}")
 
 
-
         finally:
 
             # Гарантированное освобождение ресурсов
