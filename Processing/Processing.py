@@ -7,6 +7,7 @@ import mediapipe as mp
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from PIL import ImageFont, ImageDraw, Image
 
 def collect_data():
     """Сбор датасета жестов пользователя с помощью камеры """
@@ -35,13 +36,27 @@ def collect_data():
                 ret, frame = cap.read()
                 frame = cv2.flip(frame, 1)  # Зеркальное отражение
 
+                # Определение текста в зависимости от значения j
+                if j == 0:
+                    instruction_text = 'Готовы? Нажмите "Q" \nи затем покажите открытую ладонь\nв разных позициях с разных сторон'
+                else:
+                    instruction_text = 'Готовы? Нажмите "Q" \nи затем покажите сжатый кулак\nв разных позициях с разных сторон '
+
+                # Преобразование изображения в формат PIL
+                pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                draw = ImageDraw.Draw(pil_img)
+
+                font = ImageFont.truetype("arial.ttf", 32)
+
                 # Отображение инструкции
-                cv2.putText(
-                    frame, 'Ready? Press "Q" ! :)', (100, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA
-                )
+                draw.text((10, 10), instruction_text, font=font, fill=(255, 165, 0))
+
+                # Преобразование обратно в формат OpenCV
+                frame = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
                 cv2.imshow('frame', frame)
-                if cv2.waitKey(wait) == ord('q'):
+                key = cv2.waitKey(1)
+                if key == ord('q'):
                     break
 
             # Сбор изображений
@@ -49,6 +64,15 @@ def collect_data():
             while counter < dataset_size:
                 ret, frame = cap.read()
                 frame = cv2.flip(frame, 1)  # Зеркальное отражение
+
+                progress = int((counter / dataset_size) * 100)
+                progress_text = f'Progress: {progress}%'
+                cv2.putText(
+                    frame, progress_text, (100, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA
+                )
+
+                cv2.imshow('frame', frame)
 
                 cv2.imshow('frame', frame)
                 cv2.waitKey(wait)
