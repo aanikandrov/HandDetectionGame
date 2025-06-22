@@ -22,6 +22,5 @@
 - Старайтесь продержаться как можно дольше! Удачи!
 
 ## 🌠 Скриншоты
-![image](https://github.com/user-attachments/assets/8485d2a3-e6a0-4b4d-8955-c90cdb42c9eb)
-![image](https://github.com/user-attachments/assets/7f942cdf-0523-412e-809a-38d46cac6b77)
 
+![image](https://github.com/user-attachments/assets/d15a66d3-3721-4570-bf3e-18313c53c02c)
