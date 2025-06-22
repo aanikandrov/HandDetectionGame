@@ -197,11 +197,16 @@ class HandTrackerThread(QThread):
         """ Остановка потока трекера руки """
         self.running = False
         if self.isRunning():
-            self.wait(3000)
+            self.wait(3000)  # Увеличиваем время ожидания
 
-        if self.cap and self.cap.isOpened():
-            try:
-                self.cap.release()
-                print("Camera explicitly released in stop()")
-            except Exception as e:
-                print(f"Error releasing camera in stop(): {e}")
+        # Явное освобождение ресурсов MediaPipe
+        try:
+            if hasattr(self, 'hands') and self.hands:
+                self.hands.close()
+                print("MediaPipe resources closed")
+        except Exception as e:
+            print(f"Error closing MediaPipe: {e}")
+
+        # Сбор мусора для принудительного освобождения ресурсов
+        import gc
+        gc.collect()
