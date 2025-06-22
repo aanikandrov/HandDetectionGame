@@ -390,16 +390,19 @@ class HandCursorWidget(QWidget):
         self.end_game_timer.timeout.connect(self.reset_game)
         self.end_game_timer.start(3000)
 
-
     def close_application(self):
         """ Закрытие приложения """
-        self.end_game_timer.stop()
+        # Останавливаем все таймеры
+        if hasattr(self, 'end_game_timer') and self.end_game_timer:
+            self.end_game_timer.stop()
 
+        if hasattr(self, 'game_timer') and self.game_timer:
+            self.game_timer.stop()
+
+        # Закрываем главное окно
         main_window = self.window()
         if main_window:
             main_window.close()
-
-        QApplication.quit()
 
     def paintEvent(self, event):
         """ Отрисовка игровой сцены """
