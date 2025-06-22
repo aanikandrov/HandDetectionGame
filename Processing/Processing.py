@@ -7,7 +7,9 @@ import mediapipe as mp
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+
 from PIL import ImageFont, ImageDraw, Image
+
 
 def collect_data():
     """Сбор датасета жестов пользователя с помощью камеры """
@@ -29,7 +31,6 @@ def collect_data():
                 os.makedirs(class_dir)
 
             print(f'Сбор данных для класса {j}')
-            print('Готовы? Нажмите "Q"!')
 
             # Ожидание готовности пользователя
             while True:
