@@ -28,17 +28,8 @@ class HandTrackerThread(QThread):
         # (palm - ладонь, fist - кулак)
         self.last_gesture = 0  # Последний распознанный жест
 
-    # HandTrackerThread.py
     def init_camera(self):
         """ Инициализация камеры"""
-        # Попробуем освободить камеру перед открытием
-        try:
-            temp_cap = cv2.VideoCapture(0)
-            if temp_cap.isOpened():
-                temp_cap.release()
-        except:
-            pass
-
         self.cap = cv2.VideoCapture(0)
 
         if not self.cap.isOpened():
@@ -85,19 +76,16 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5    # Мин порог доверия отслеживания
         )
 
-        self.pixel_size = 9 # 8 сильный эффект
+        self.pixel_size = 8 # 8 сильный эффект
                             # 0 нет эффекта
         # TODO вынести в настройки
 
         try:
             while self.running:
-                if not self.running:
-                    break
-
                 ret, frame = self.cap.read()
                 # Зеркальное отображение (0 - обычное)
                 frame = cv2.flip(frame, 1)
-                if not ret or not self.running:
+                if not ret:
                     continue
 
                 # Размеры кадра
@@ -181,48 +169,23 @@ class HandTrackerThread(QThread):
                     bytes_per_line,
                     QImage.Format_BGR888
                 )
-                if self.running:
-                    self.frame_updated.emit(qt_image)
-
-
-
-        except Exception as e:
-
-            print(f"Unexpected error in tracker thread: {e}")
-
-
+                self.frame_updated.emit(qt_image)
 
         finally:
-
-            # Гарантированное освобождение ресурсов
-
             try:
-
-                if hasattr(self, 'hands') and self.hands:
-                    # ЗАМЕНА: просто обнуляем ссылку вместо вызова close()
-
-                    self.hands = None
-
-                    print("MediaPipe resources released")
-
-            except Exception as e:
-
-                print(f"Error releasing MediaPipe resources: {e}")
-
-            try:
-
-                if hasattr(self, 'cap') and self.cap and self.cap.isOpened():
+                if self.cap and self.cap.isOpened():
                     self.cap.release()
-
-                    print("Camera released in finally block")
-
             except Exception as e:
+                print(f"Error releasing camera: {e}")
 
-                print(f"Error releasing camera in finally: {e}")
+            try:
+                if hasattr(self, 'hands') and self.hands:
+                    self.hands.close()
+            except Exception as e:
+                print(f"Error closing MediaPipe resources: {e}")
 
     def stop(self):
         """ Остановка потока трекера руки """
         self.running = False
-        # УДАЛЕНО: вызов hands.close() и cap.release() здесь
         if self.isRunning():
             self.wait(1000)

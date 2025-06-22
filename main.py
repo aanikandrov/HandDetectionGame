@@ -1,8 +1,6 @@
 import os
 import sys
-import time
 
-import cv2
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtWidgets import (QApplication, QWidget, QHBoxLayout,
@@ -18,7 +16,7 @@ class MainWindow(QMainWindow):
     """ Инициализация главного окна, создание интерфейса и подключение сигналов """
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+        self.setWindowTitle("Hand Gesture Controlled Game")
         self.setGeometry(100, 100, 1200, 600)
 
         self.setStyleSheet("""
@@ -43,6 +41,9 @@ class MainWindow(QMainWindow):
                     QPushButton:hover {
                         background-color: #ffaa44;  /* Светло-оранжевый */
                         border: 3px solid #ffcc00;
+                    }
+                    QPushButton:pressed {
+                        background-color: #cc6600;  /* Темно-оранжевый */
                     }
                     QLabel {
                         color: #ffffff;
@@ -77,7 +78,6 @@ class MainWindow(QMainWindow):
         self.current_gesture = 0
         self.hand_detected = False
         self.game_paused = True
-        self.processing_window_open = False
 
         # Центральный виджет
         # Центральный виджет
@@ -100,48 +100,24 @@ class MainWindow(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(15)
 
-        # Контейнер для системных кнопок
-        system_container = QWidget()
-        system_layout = QHBoxLayout(system_container)
-        system_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Кнопка правил
-        self.rules_button = QPushButton("Правила")
-        self.rules_button.setFixedSize(40, 40)
-        self.rules_button.setStyleSheet("font-size: 24px; font-weight: bold;")
-        self.rules_button.setToolTip("Показать правила игры")
-        self.rules_button.clicked.connect(self.show_rules)
-        system_layout.addWidget(self.rules_button)
-
-        # Кнопка закрытия
-        self.close_button = QPushButton("Х")
-        self.close_button.setFixedSize(40, 40)
-        self.close_button.setStyleSheet("font-size: 24px; font-weight: bold;")
-        self.close_button.clicked.connect(self.close)
-        system_layout.addWidget(self.close_button)
-
-        right_layout.addWidget(system_container)
-
         # Контейнер для кнопок управления (Start, Restart)
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
         button_layout.setContentsMargins(0, 0, 0, 0)
 
         # Кнопка старт/пауза
-        self.start_pause_button = QPushButton("Старт")
+        self.start_pause_button = QPushButton("Start")
         self.start_pause_button.setFixedHeight(40)
         self.start_pause_button.clicked.connect(self.toggle_pause)
         self.start_pause_button.setEnabled(False)
-        self.start_pause_button.setStyleSheet("font-size: 24px; font-weight: bold;")
         self.start_pause_button.setToolTip("Поставить на паузу/продолжить")
         button_layout.addWidget(self.start_pause_button)
 
         # Кнопка перезапуска игры
-        self.restart_button = QPushButton("Заново")
+        self.restart_button = QPushButton("Restart")
         self.restart_button.setFixedHeight(40)
         self.restart_button.clicked.connect(self.restart_game)
         self.restart_button.setEnabled(False)
-        self.restart_button.setStyleSheet("font-size: 24px; font-weight: bold;")
         self.restart_button.setToolTip("Начать игру заново")
         button_layout.addWidget(self.restart_button)
 
@@ -155,8 +131,8 @@ class MainWindow(QMainWindow):
         # Таймер
         timer_container = QWidget()
         timer_v_layout = QVBoxLayout(timer_container)
-        timer_label = QLabel("Текущее время:")
-        timer_label.setStyleSheet("font-weight: bold; font-size: 24px; color: #ff8800;")
+        timer_label = QLabel("Game Time:")
+        timer_label.setStyleSheet("font-weight: bold; color: #ff8800;")
         self.timer_label = QLabel("00:00")
         self.timer_label.setObjectName("TimerLabel")
         self.timer_label.setAlignment(Qt.AlignCenter)
@@ -168,8 +144,8 @@ class MainWindow(QMainWindow):
         # Элементы управления скоростью
         speed_container = QWidget()
         speed_v_layout = QVBoxLayout(speed_container)
-        speed_label = QLabel("Скорость:")
-        speed_label.setStyleSheet("font-weight: bold; font-size: 24px; color: #ff8800;")
+        speed_label = QLabel("Enemy Speed:")
+        speed_label.setStyleSheet("font-weight: bold; color: #ff8800;")
         self.speed_spinbox = QSpinBox()
         self.speed_spinbox.setRange(1, 15)
         self.speed_spinbox.setValue(1)
@@ -190,8 +166,8 @@ class MainWindow(QMainWindow):
         # Лучшее время
         best_time_container = QWidget()
         best_time_v_layout = QVBoxLayout(best_time_container)
-        best_time_label = QLabel("Лучшее время:")
-        best_time_label.setStyleSheet("font-weight: bold; font-size: 24px; color: #ff8800;")
+        best_time_label = QLabel("Best Time:")
+        best_time_label.setStyleSheet("font-weight: bold; color: #ff8800;")
         self.best_time_label_value = QLabel("00:00")
         self.best_time_label_value.setObjectName("BestTimeLabel")
         self.best_time_label_value.setAlignment(Qt.AlignCenter)
@@ -200,11 +176,20 @@ class MainWindow(QMainWindow):
         best_time_v_layout.addWidget(self.best_time_label_value)
         best_rules_layout.addWidget(best_time_container)
 
+        # Кнопка правил
+        self.rules_button = QPushButton("?")
+        self.rules_button.setFixedSize(60, 60)
+        self.rules_button.setStyleSheet("font-size: 24px; font-weight: bold;")
+        self.rules_button.setToolTip("Показать правила игры")
+        self.rules_button.clicked.connect(self.show_rules)
+        best_rules_layout.addWidget(self.rules_button)
+
+        right_layout.addWidget(best_rules_container)
+
         # Кнопка обработки данных
         self.processing_button = QPushButton("Обработка данных")
-        self.processing_button.setFixedHeight(40)
+        self.processing_button.setFixedHeight(50)
         self.processing_button.clicked.connect(self.open_processing_window)
-        self.restart_button.setStyleSheet("font-size: 24px; font-weight: bold;")
         right_layout.addWidget(self.processing_button)
 
         # Виджет камеры
@@ -213,7 +198,7 @@ class MainWindow(QMainWindow):
                     border: 3px solid #ff8800;
                     background-color: #000033;
                     color: white;
-                    font-size: 24px;
+                    font-size: 16pt;
                     qproperty-alignment: AlignCenter;
                 """)
         self.camera_widget.setFixedSize(400, 400)
@@ -268,24 +253,20 @@ class MainWindow(QMainWindow):
             self.timer_label.setText(f"{minutes:02d}:{seconds:02d}")
 
     def stop_tracker(self):
-        if hasattr(self, 'tracker_thread') and self.tracker_thread and self.tracker_thread.isRunning():
-            print("Stopping tracker thread...")
+        if self.tracker_thread.isRunning():
             self.tracker_thread.stop()
+            # Убрали ожидание здесь, так как оно уже в stop()
 
-        # Очищаем виджет камеры (один раз)
-        self.camera_widget.clear()
-        self.camera_widget.setText("Камера отключена")
-        self.camera_widget.setStyleSheet("""
-                border: 2px solid #404040; 
-                background-color: #333;
-                color: white;
-                font-size: 16pt;
-                qproperty-alignment: AlignCenter;
-            """)
-
-        # Сбор мусора
-        import gc
-        gc.collect()
+            # Очищаем виджет камеры
+            self.camera_widget.clear()
+            self.camera_widget.setText("Камера используется в окне обработки")
+            self.camera_widget.setStyleSheet("""
+                    border: 2px solid #404040; 
+                    background-color: #333;
+                    color: white;
+                    font-size: 16pt;
+                    qproperty-alignment: AlignCenter;
+                """)
 
     def restart_tracker(self):
         """Перезапуск потока трекера руки"""
@@ -300,36 +281,18 @@ class MainWindow(QMainWindow):
 
     def open_processing_window(self):
         """Открытие окна обработки данных"""
-        if self.processing_window_open:
-            print("Processing window is already open")
-            return
+        # Останавливаем трекер руки перед открытием окна
+        self.stop_tracker()
 
-        try:
-            self.processing_window_open = True
-            print("Stopping tracker...")
-            self.stop_tracker()
-
-            print("Waiting for resources release...")
-            QTimer.singleShot(7000, self._open_processing_window)
-        except Exception as e:
-            print(f"Error opening processing window: {e}")
-            self.processing_window_open = False
-            self.restart_tracker()
+        # Задержка для полного освобождения ресурсов
+        QTimer.singleShot(1500, self._open_processing_window)
 
     def _open_processing_window(self):
-        try:
-            self.processing_window = ProcessingWindow(self)
-            self.processing_window.finished.connect(self.on_processing_finished)
-            self.processing_window.exec_()
-        except Exception as e:
-            print(f"Error showing processing window: {e}")
-            self.processing_window_open = False
-            self.restart_tracker()
+        self.processing_window = ProcessingWindow(self)
+        self.processing_window.finished.connect(self.restart_tracker)
+        self.processing_window.exec_()
 
-    def on_processing_finished(self):
-        """Обработчик закрытия окна обработки"""
-        self.processing_window_open = False
-        self.restart_tracker()
+
 
     def format_time(self, seconds):
         """ Форматирование времени в формате MM:SS """
@@ -374,12 +337,12 @@ class MainWindow(QMainWindow):
         if self.game_paused:
             self.active_timer.start()
             self.game_paused = False
-            self.start_pause_button.setText("Пауза")
+            self.start_pause_button.setText("Pause")
             self.speed_increase_timer.start()
             self.cursor_widget.game_paused = False
         else:
             self.game_paused = True
-            self.start_pause_button.setText("Старт")
+            self.start_pause_button.setText("Start")
             self.speed_increase_timer.stop()
             self.active_timer.stop()
             self.cursor_widget.game_paused = True
@@ -389,7 +352,7 @@ class MainWindow(QMainWindow):
         self.active_timer.stop()
         self.speed_increase_timer.stop()
         self.game_paused = True
-        self.start_pause_button.setText("Старт")
+        self.start_pause_button.setText("Start")
         self.best_time_to_file()
 
     def restart_game(self):
@@ -409,7 +372,7 @@ class MainWindow(QMainWindow):
         self.active_seconds = 0
         self.game_start_time = 0
         self.timer_label.setText("00:00")
-        self.start_pause_button.setText("Старт")
+        self.start_pause_button.setText("Start")
 
         # Сброс скорости врагов
         self.cursor_widget.beetle.speed = 1
@@ -459,29 +422,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """ Обработчик закрытия окна """
-        try:
-            print("Closing application...")
-            # Останавливаем трекер
-            self.stop_tracker()
-
-            # Даем время на освобождение ресурсов
-            if hasattr(self, 'tracker_thread') and self.tracker_thread:
-                if self.tracker_thread.isRunning():
-                    print("Waiting for tracker thread to finish...")
-                    self.tracker_thread.wait(1000)
-
-                    # Принудительно завершаем поток, если он все еще работает
-                    if self.tracker_thread.isRunning():
-                        print("Forcing tracker thread termination")
-                        self.tracker_thread.terminate()
-                        self.tracker_thread.wait(1000)
-
-            print("Close event accepted")
-            event.accept()
-        except Exception as e:
-            print(f"Error during close: {e}")
-            event.accept()
-
+        self.tracker_thread.stop()
+        self.tracker_thread.wait()
         super().closeEvent(event)
 
 

@@ -1,8 +1,6 @@
-import os
-
 import numpy as np
 from PyQt5.QtCore import Qt, QPoint, QTimer, pyqtSignal
-from PyQt5.QtGui import QPainter, QColor, QPen, QFont, QPixmap
+from PyQt5.QtGui import QPainter, QColor, QPen, QFont
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QApplication)
 
 from Objects.DraggableSquare import DraggableSquare
@@ -22,14 +20,6 @@ class HandCursorWidget(QWidget):
         self.setWindowTitle("Hand Cursor Controller")
         self.setStyleSheet("background-color: #000033; border: 2px solid #404040;")
         self.setFixedSize(1000, 1000)
-
-        # Загрузка фонового изображения
-        texture_path = os.path.join('Images/space.png')
-        self.background = QPixmap(texture_path)
-        if self.background.isNull():
-            print("Фоновое изображение не найдено!")
-            self.background = QPixmap(self.size())
-            self.background.fill(QColor(0, 0, 51))
 
         # Параметры курсора
         self.cursor_pos = [0.5, 0.5]  # Нормализованная позиция курсора
@@ -66,13 +56,13 @@ class HandCursorWidget(QWidget):
         beetle2_pos = self.initial_positions['beetle2']
         circle_pos = self.initial_positions['circle']
 
-        self.pink_square = DraggableSquare(pink_pos[0], pink_pos[1], 80, QColor(255, 105, 180))
-        self.beetle = ObjectWithTarget(beetle_pos[0], beetle_pos[1], 50, QColor(0, 255, 0))
-        self.beetle2 = ObjectWithTarget(beetle2_pos[0], beetle2_pos[1], 50, QColor(0, 255, 0))
-        self.orange_circle = StaticCircle(circle_pos[0], circle_pos[1], 70, QColor(255, 165, 0))
+        self.pink_square = DraggableSquare(pink_pos[0], pink_pos[1], 100, QColor(255, 105, 180))
+        self.beetle = ObjectWithTarget(beetle_pos[0], beetle_pos[1], 40, QColor(0, 255, 0))
+        self.beetle2 = ObjectWithTarget(beetle2_pos[0], beetle2_pos[1], 40, QColor(0, 255, 0))
+        self.orange_circle = StaticCircle(circle_pos[0], circle_pos[1], 50, QColor(255, 165, 0))
 
         self.squares = [
-            DraggableSquare(blue_pos[0], blue_pos[1], 80, QColor(65, 105, 225)),
+            DraggableSquare(blue_pos[0], blue_pos[1], 100, QColor(65, 105, 225)),
             self.pink_square,
             self.beetle,
             self.beetle2
@@ -102,6 +92,7 @@ class HandCursorWidget(QWidget):
         self.end_game = False
         self.game_end = False
         self.dragging_square = None
+
 
         # Сброс следа курсора
         self.trail_positions = []
@@ -388,33 +379,29 @@ class HandCursorWidget(QWidget):
         self.end_game_timer.setSingleShot(True)
         self.end_game_timer.timeout.connect(self.restart_requested.emit)
         self.end_game_timer.timeout.connect(self.reset_game)
-        self.end_game_timer.start(1000)
+        self.end_game_timer.start(3000)
+
 
     def close_application(self):
         """ Закрытие приложения """
-        # Останавливаем все таймеры
-        if hasattr(self, 'end_game_timer') and self.end_game_timer:
-            self.end_game_timer.stop()
+        self.end_game_timer.stop()
 
-        if hasattr(self, 'game_timer') and self.game_timer:
-            self.game_timer.stop()
-
-        # Закрываем главное окно
         main_window = self.window()
         if main_window:
             main_window.close()
+
+        QApplication.quit()
 
     def paintEvent(self, event):
         """ Отрисовка игровой сцены """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Рисуем фоновое изображение
-        painter.drawPixmap(self.rect(), self.background)
-
-        # Рисуем рамку поверх изображения
+        # Рисуем фон и рамку вручную
+        painter.fillRect(self.rect(), QColor(0, 0, 0))
         painter.setPen(QPen(QColor(0x40, 0x40, 0x40), 2))  # #404040
         painter.drawRect(self.rect().adjusted(1, 1, -1, -1))
+
         # Отрисовка следа курсора
         if self.is_trail and len(self.trail_positions) > 1:
             for i in range(1, len(self.trail_positions)):
