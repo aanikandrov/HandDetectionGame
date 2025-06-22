@@ -79,6 +79,7 @@ class MainWindow(QMainWindow):
         self.current_gesture = 0
         self.hand_detected = False
         self.game_paused = True
+        self.processing_window_open = False
 
         # Центральный виджет
         # Центральный виджет
@@ -257,16 +258,16 @@ class MainWindow(QMainWindow):
         if self.tracker_thread.isRunning():
             self.tracker_thread.stop()
 
-        # Дополнительная очистка ресурсов OpenCV
+        # Дополнительные меры для освобождения камеры
         try:
-            cv2.destroyAllWindows()
-            # Явное освобождение камеры через временный объект
+            # Принудительное освобождение камеры через OpenCV
             temp_cap = cv2.VideoCapture(0)
             if temp_cap.isOpened():
                 temp_cap.release()
-                print("Camera force-released in main thread")
+                print("Camera force-released via OpenCV")
+            cv2.destroyAllWindows()
         except Exception as e:
-            print(f"Camera force-release error: {e}")
+            print(f"Force release error: {e}")
 
         # Очищаем виджет камеры
         self.camera_widget.clear()
@@ -278,6 +279,10 @@ class MainWindow(QMainWindow):
                 font-size: 16pt;
                 qproperty-alignment: AlignCenter;
             """)
+
+        # Сбор мусора
+        import gc
+        gc.collect()
 
     def restart_tracker(self):
         """Перезапуск потока трекера руки"""
@@ -292,24 +297,36 @@ class MainWindow(QMainWindow):
 
     def open_processing_window(self):
         """Открытие окна обработки данных"""
+        if self.processing_window_open:
+            print("Processing window is already open")
+            return
+
         try:
+            self.processing_window_open = True
             print("Stopping tracker...")
             self.stop_tracker()
 
-            # Увеличиваем задержку до 5 секунд
             print("Waiting for resources release...")
-            QTimer.singleShot(5000, self._open_processing_window)
+            QTimer.singleShot(7000, self._open_processing_window)
         except Exception as e:
             print(f"Error opening processing window: {e}")
-            # Попытка восстановить трекер
+            self.processing_window_open = False
             self.restart_tracker()
 
     def _open_processing_window(self):
-        self.processing_window = ProcessingWindow(self)
-        self.processing_window.finished.connect(self.restart_tracker)
-        self.processing_window.exec_()
+        try:
+            self.processing_window = ProcessingWindow(self)
+            self.processing_window.finished.connect(self.on_processing_finished)
+            self.processing_window.exec_()
+        except Exception as e:
+            print(f"Error showing processing window: {e}")
+            self.processing_window_open = False
+            self.restart_tracker()
 
-
+    def on_processing_finished(self):
+        """Обработчик закрытия окна обработки"""
+        self.processing_window_open = False
+        self.restart_tracker()
 
     def format_time(self, seconds):
         """ Форматирование времени в формате MM:SS """

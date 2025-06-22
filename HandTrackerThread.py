@@ -85,7 +85,7 @@ class HandTrackerThread(QThread):
             min_tracking_confidence=0.5    # Мин порог доверия отслеживания
         )
 
-        self.pixel_size = 8 # 8 сильный эффект
+        self.pixel_size = 9 # 8 сильный эффект
                             # 0 нет эффекта
         # TODO вынести в настройки
 
