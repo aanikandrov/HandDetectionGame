@@ -7,7 +7,9 @@ import mediapipe as mp
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from PIL import Image, ImageDraw, ImageFont
+
+from PIL import ImageFont, ImageDraw, Image
+
 
 def collect_data():
     """Сбор датасета жестов пользователя с помощью камеры """
@@ -46,7 +48,6 @@ def collect_data():
                 draw = ImageDraw.Draw(pil_img)
 
                 font = ImageFont.truetype("arial.ttf", 32)
-
 
                 # Отображение инструкции
                 draw.text((10, 10), instruction_text, font=font, fill=(255, 165, 0))
