@@ -15,6 +15,15 @@ def collect_data():
     """Сбор датасета жестов пользователя с помощью камеры """
 
     try:
+        try:
+            temp_cap = cv2.VideoCapture(0)
+            if temp_cap.isOpened():
+                temp_cap.release()
+                print("Pre-release camera before collection")
+            cv2.destroyAllWindows()
+        except Exception as e:
+            print(f"Pre-release error: {e}")
+
         DATA_DIR = 'data'
         if not os.path.exists(DATA_DIR):
             os.makedirs(DATA_DIR)
@@ -87,12 +96,25 @@ def collect_data():
         cv2.destroyAllWindows()
         print("Сбор данных завершен!")
 
+
     except Exception as e:
-        print(f"Ошибка в collect_data: {str(e)}")
+
+        print(f"Critical error in collect_data: {str(e)}")
+
+        # Дополнительная обработка для Access Violation
+
+        if "access violation" in str(e).lower() or "0xC0000005" in str(e):
+            print("Memory access violation detected. Try restarting the application.")
+
+        raise  # Перебрасываем исключение для обработки в вызывающем коде
 
     finally:
-        if 'cap' in locals() and cap.isOpened():
-            cap.release()
+        try:
+            if 'cap' in locals() and cap.isOpened():
+                cap.release()
+                print("Camera explicitly released")
+        except:
+            pass
         cv2.destroyAllWindows()
 
 
