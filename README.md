@@ -23,5 +23,6 @@
 
 ## 🌠 Скриншоты
 
-![image](https://github.com/user-attachments/assets/490a8fbc-36ee-4c7b-9fcf-06ff2b840122)
+![photo_2025-06-22_19-48-42](https://github.com/user-attachments/assets/b98d4962-0b62-4e68-96c3-c5f051ae51a3)
+
 
