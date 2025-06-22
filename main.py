@@ -468,13 +468,13 @@ class MainWindow(QMainWindow):
             if hasattr(self, 'tracker_thread') and self.tracker_thread:
                 if self.tracker_thread.isRunning():
                     print("Waiting for tracker thread to finish...")
-                    self.tracker_thread.wait(3000)  # Ждем до 3 секунд
+                    self.tracker_thread.wait(1000)
 
                     # Принудительно завершаем поток, если он все еще работает
                     if self.tracker_thread.isRunning():
                         print("Forcing tracker thread termination")
                         self.tracker_thread.terminate()
-                        self.tracker_thread.wait(2000)
+                        self.tracker_thread.wait(1000)
 
             print("Close event accepted")
             event.accept()

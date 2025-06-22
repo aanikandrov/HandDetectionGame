@@ -225,4 +225,4 @@ class HandTrackerThread(QThread):
         self.running = False
         # УДАЛЕНО: вызов hands.close() и cap.release() здесь
         if self.isRunning():
-            self.wait(3000)
+            self.wait(1000)

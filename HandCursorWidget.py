@@ -388,7 +388,7 @@ class HandCursorWidget(QWidget):
         self.end_game_timer.setSingleShot(True)
         self.end_game_timer.timeout.connect(self.restart_requested.emit)
         self.end_game_timer.timeout.connect(self.reset_game)
-        self.end_game_timer.start(3000)
+        self.end_game_timer.start(1000)
 
     def close_application(self):
         """ Закрытие приложения """

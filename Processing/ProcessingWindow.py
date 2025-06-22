@@ -11,6 +11,7 @@ class ProcessingWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Обработка данных и обучение модели")
+        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
         self.setFixedSize(600, 500)
 
         # Основной layout
@@ -104,7 +105,7 @@ class ProcessingWindow(QDialog):
                 try:
                     if self.processing_thread.isRunning():
                         self.processing_thread.cancel()
-                        self.processing_thread.wait(3000)
+                        self.processing_thread.wait(1000)
                 except:
                     pass
 
