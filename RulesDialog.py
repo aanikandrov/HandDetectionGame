@@ -65,7 +65,7 @@ class RulesDialog(QDialog):
         except Exception as e:
             rules_text = f"Ошибка загрузки правил: {str(e)}"
 
-        # Добавляем ретро-стили к тексту
+        # Стили к тексту
         styled_text = f"""
                 <div style="
                     font-family: 'Courier New', monospace;
@@ -82,7 +82,7 @@ class RulesDialog(QDialog):
         rules_label.setAlignment(Qt.AlignTop)
         rules_label.setMinimumWidth(450)
 
-        # Добавляем область прокрутки
+        # Область прокрутки
         scroll_area = QScrollArea()
         scroll_area.setWidget(rules_label)
         scroll_area.setWidgetResizable(True)

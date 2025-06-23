@@ -462,26 +462,25 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """ Обработчик закрытия окна """
         try:
-            print("Closing application...")
+            print("Закрытие приложения...")
             # Останавливаем трекер
             self.stop_tracker()
 
             # Даем время на освобождение ресурсов
             if hasattr(self, 'tracker_thread') and self.tracker_thread:
                 if self.tracker_thread.isRunning():
-                    print("Waiting for tracker thread to finish...")
+                    print("Ожидание завершения потока трекера...")
                     self.tracker_thread.wait(1000)
 
                     # Принудительно завершаем поток, если он все еще работает
                     if self.tracker_thread.isRunning():
-                        print("Forcing tracker thread termination")
+                        print("Принудительное завершение потока трекера")
                         self.tracker_thread.terminate()
                         self.tracker_thread.wait(1000)
 
-            print("Close event accepted")
             event.accept()
         except Exception as e:
-            print(f"Error during close: {e}")
+            print(f"Ошибка при закрытии: {e}")
             event.accept()
 
         super().closeEvent(event)

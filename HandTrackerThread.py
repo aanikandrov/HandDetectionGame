@@ -184,44 +184,26 @@ class HandTrackerThread(QThread):
                 if self.running:
                     self.frame_updated.emit(qt_image)
 
-
-
         except Exception as e:
-
-            print(f"Unexpected error in tracker thread: {e}")
-
-
+            print(f"Неожиданная ошибка в потоке трекера: {e}")
         finally:
-
             # Гарантированное освобождение ресурсов
-
             try:
-
                 if hasattr(self, 'hands') and self.hands:
-                    # ЗАМЕНА: просто обнуляем ссылку вместо вызова close()
-
                     self.hands = None
-
-                    print("MediaPipe resources released")
-
+                    print("Ресурсы MediaPipe освобождены")
             except Exception as e:
-
-                print(f"Error releasing MediaPipe resources: {e}")
+                print(f"Камера освобождена в блоке finally: {e}")
 
             try:
-
                 if hasattr(self, 'cap') and self.cap and self.cap.isOpened():
                     self.cap.release()
-
-                    print("Camera released in finally block")
-
+                    print("Ошибка при освобождении ресурсов MediaPipe")
             except Exception as e:
-
-                print(f"Error releasing camera in finally: {e}")
+                print(f"Ошибка при освобождении камеры в finally: {e}")
 
     def stop(self):
         """ Остановка потока трекера руки """
         self.running = False
-        # УДАЛЕНО: вызов hands.close() и cap.release() здесь
         if self.isRunning():
             self.wait(1000)

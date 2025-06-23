@@ -55,28 +55,12 @@ class ProcessingThread(QThread):
 
 
         except Exception as e:
-
-            error_msg = f"Critical processing error: {str(e)}"
-
+            error_msg = f"Критическая ошибка: {str(e)}"
             self.log_message.emit(error_msg)
 
-            # Специальная обработка для Access Violation
-
             if "access violation" in str(e).lower() or "0xC0000005" in str(e):
-                self.log_message.emit("Memory access violation detected! This is often caused by:")
-
-                self.log_message.emit("1. Camera driver issues")
-
-                self.log_message.emit("2. Conflicts with other camera applications")
-
-                self.log_message.emit("3. MediaPipe library conflicts")
-
-                self.log_message.emit("Please try restarting the application or your computer.")
-
+                self.log_message.emit("Ошибка с доступом к камере!")
             self.step_completed.emit(False)
-        # finally:
-        #     if self.cancel_requested:
-        #         self.log_message.emit("Обработка отменена пользователем")
 
     def cancel(self):
         """Запрос отмены обработки"""
