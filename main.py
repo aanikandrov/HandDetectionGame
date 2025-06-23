@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
         best_rules_layout.addWidget(best_time_container)
 
         # Кнопка обработки данных
-        self.processing_button = QPushButton("Обработка данных")
+        self.processing_button = QPushButton("Настройка модели")
         self.processing_button.setFixedHeight(40)
         self.processing_button.clicked.connect(self.open_processing_window)
         self.restart_button.setStyleSheet("font-size: 24px; font-weight: bold;")
@@ -276,6 +276,7 @@ class MainWindow(QMainWindow):
 
         # Очищаем виджет камеры (один раз)
         self.camera_widget.clear()
+
         self.camera_widget.setText("Камера отключена")
         self.camera_widget.setStyleSheet("""
                 border: 2px solid #404040; 

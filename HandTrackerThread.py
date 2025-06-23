@@ -4,6 +4,8 @@ import cv2
 import pickle
 import numpy as np
 
+from PIL import Image, ImageDraw, ImageFont
+
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QImage
 
@@ -61,7 +63,6 @@ class HandTrackerThread(QThread):
             print(f"Error loading model: {e}")
             return False
 
-
     def run(self):
         """ Основной цикл распознавания жестов"""
 
@@ -69,6 +70,49 @@ class HandTrackerThread(QThread):
         camera_ok = self.init_camera()
         model_ok = self.load_model()
         self.tracker_ready.emit(camera_ok and model_ok)
+
+        if not model_ok:
+            # Создаем изображение с сообщением
+            error_image = np.zeros((480, 640, 3), dtype=np.uint8)
+            error_image.fill(51)  # Тот же фон #333 как в main.py (51,51,51)
+
+            # Используем PIL для корректного отображения русского текста
+            pil_img = Image.fromarray(cv2.cvtColor(error_image, cv2.COLOR_BGR2RGB))
+            draw = ImageDraw.Draw(pil_img)
+
+            # Пробуем загрузить шрифт
+            try:
+                font = ImageFont.truetype("arial.ttf", 24)
+            except IOError:
+                # Если Arial недоступен, используем стандартный шрифт
+                font = ImageFont.load_default()
+
+            # Текст сообщения
+            text = "Модель не обнаружена!\nПройдите настройку модели!"
+
+            # Рассчитываем позицию для центрирования текста
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            text_x = (640 - text_width) // 2
+            text_y = (480 - text_height) // 2
+
+            # Рисуем текст белым цветом
+            draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
+
+            # Конвертируем обратно в OpenCV формат
+            error_image = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+            # Конвертируем в QImage и отправляем
+            h, w, ch = error_image.shape
+            bytes_per_line = ch * w
+            qt_image = QImage(error_image.data, w, h, bytes_per_line, QImage.Format_BGR888)
+            self.frame_updated.emit(qt_image)
+
+            # Ожидаем завершения
+            while self.running:
+                pass
+            return
 
         # Выход при ошибке инициализации
         if not camera_ok or not model_ok:

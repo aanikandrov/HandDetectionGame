@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 from PIL import ImageFont, ImageDraw, Image
+import shutil
 
 
 def collect_data():
@@ -48,9 +49,9 @@ def collect_data():
 
                 # Определение текста в зависимости от значения j
                 if j == 0:
-                    instruction_text = 'Готовы? Нажмите "Q" \nи затем покажите открытую ладонь\nв разных позициях с разных сторон'
+                    instruction_text = 'Нажмите "Q" \nи затем покажите открытую ладонь\nв разных позициях с разных сторон'
                 else:
-                    instruction_text = 'Готовы? Нажмите "Q" \nи затем покажите сжатый кулак\nв разных позициях с разных сторон '
+                    instruction_text = 'Нажмите "Q" \nи затем покажите сжатый кулак\nв разных позициях с разных сторон '
 
                 # Преобразование изображения в формат PIL
                 pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -79,7 +80,7 @@ def collect_data():
                 progress_text = f'Progress: {progress}%'
                 cv2.putText(
                     frame, progress_text, (100, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2, cv2.LINE_AA
                 )
 
                 cv2.imshow('frame', frame)
@@ -230,6 +231,30 @@ def train_model():
     with open(model_path, 'wb') as f:
         pickle.dump({'model': model}, f)
     print(f"Модель сохранена в {model_path}")
+
+    # Удаление временных данных после обучения
+    try:
+        # Удаление папок 0 и 1 внутри data
+        data_dir = 'data'
+        for class_dir in ['0', '1']:
+            dir_path = os.path.join(data_dir, class_dir)
+            if os.path.exists(dir_path):
+                shutil.rmtree(dir_path)
+                print(f"Удалена папка: {dir_path}")
+
+        # Удаление папки data
+        if os.path.exists(data_dir):
+            shutil.rmtree(data_dir)
+            print(f"Удалена папка: {data_dir}")
+
+        # Удаление файла data.pickle
+        pickle_path = 'data.pickle'
+        if os.path.exists(pickle_path):
+            os.remove(pickle_path)
+            print(f"Удален файл: {pickle_path}")
+
+    except Exception as e:
+        print(f"Ошибка при удалении временных данных: {e}")
 
 
 def test_model():

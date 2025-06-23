@@ -99,6 +99,7 @@ class ProcessingWindow(QDialog):
             self.start_button.setEnabled(False)
             self.cancel_button.setEnabled(False)
             self.log_text.clear()
+            self.progress_bar.setValue(0)
 
             # Проверяем, не существует ли предыдущий поток
             if hasattr(self, 'processing_thread') and self.processing_thread:
@@ -138,7 +139,6 @@ class ProcessingWindow(QDialog):
         if success:
             self.current_step += 1
             self.update_step_info()
-            self.progress_bar.setValue(0)
 
             if self.current_step < 4:
                 self.log_message(f"Шаг {self.current_step} успешно завершен!")
