@@ -25,7 +25,8 @@
 ## 🌠 Скриншоты
 
 ![image](https://github.com/user-attachments/assets/68db96cd-b370-48ed-b679-fef72c6a85e4)
-![image](https://github.com/user-attachments/assets/785fc3cf-1fdc-49d7-baff-f832703761e9)
+
+![image](https://github.com/user-attachments/assets/af2cda1b-98d9-42fa-b39a-c6b696d0c10e)
 
 
 
