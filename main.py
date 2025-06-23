@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
         best_rules_layout.addWidget(best_time_container)
 
         # Кнопка обработки данных
-        self.processing_button = QPushButton("Обработка данных")
+        self.processing_button = QPushButton("Настройка модели")
         self.processing_button.setFixedHeight(40)
         self.processing_button.clicked.connect(self.open_processing_window)
         self.restart_button.setStyleSheet("font-size: 24px; font-weight: bold;")
@@ -276,6 +276,7 @@ class MainWindow(QMainWindow):
 
         # Очищаем виджет камеры (один раз)
         self.camera_widget.clear()
+
         self.camera_widget.setText("Камера отключена")
         self.camera_widget.setStyleSheet("""
                 border: 2px solid #404040; 
@@ -462,26 +463,25 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """ Обработчик закрытия окна """
         try:
-            print("Closing application...")
+            print("Закрытие приложения...")
             # Останавливаем трекер
             self.stop_tracker()
 
             # Даем время на освобождение ресурсов
             if hasattr(self, 'tracker_thread') and self.tracker_thread:
                 if self.tracker_thread.isRunning():
-                    print("Waiting for tracker thread to finish...")
+                    print("Ожидание завершения потока трекера...")
                     self.tracker_thread.wait(1000)
 
                     # Принудительно завершаем поток, если он все еще работает
                     if self.tracker_thread.isRunning():
-                        print("Forcing tracker thread termination")
+                        print("Принудительное завершение потока трекера")
                         self.tracker_thread.terminate()
                         self.tracker_thread.wait(1000)
 
-            print("Close event accepted")
             event.accept()
         except Exception as e:
-            print(f"Error during close: {e}")
+            print(f"Ошибка при закрытии: {e}")
             event.accept()
 
         super().closeEvent(event)

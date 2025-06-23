@@ -19,64 +19,48 @@ class ProcessingThread(QThread):
             # Шаг 1: Сбор данных
             if self.start_step <= 0 and not self.cancel_requested:
                 self.log_message.emit("Начало сбора данных...")
-                self.progress_updated.emit(0)
+                self.progress_updated.emit(0)  # Начало шага - 0%
 
                 collect_data()
-                self.progress_updated.emit(100)
 
                 self.log_message.emit("Сбор данных завершен!")
+                self.progress_updated.emit(25)  # После шага 1 - 25%
                 self.step_completed.emit(True)
 
             # Шаг 2: Разметка данных
             if self.start_step <= 1 and not self.cancel_requested:
                 self.log_message.emit("Начало разметки данных...")
-                self.progress_updated.emit(0)
+                self.progress_updated.emit(25)  # Начало шага - 25%
 
                 create_dataset()
-                self.progress_updated.emit(100)
 
                 self.log_message.emit("Разметка данных завершена!")
+                self.progress_updated.emit(50)  # После шага 2 - 50%
                 self.step_completed.emit(True)
 
             # Шаг 3: Обучение модели
             if self.start_step <= 2 and not self.cancel_requested:
                 self.log_message.emit("Начало обучения модели...")
-                self.progress_updated.emit(0)
+                self.progress_updated.emit(50)  # Начало шага - 50%
 
                 train_model()
-                self.progress_updated.emit(100)
 
                 self.log_message.emit("Обучение модели завершено!")
+                self.progress_updated.emit(75)  # После шага 3 - 75%
                 self.step_completed.emit(True)
 
             # Все шаги выполнены
             if not self.cancel_requested:
                 self.log_message.emit("Все этапы обработки успешно завершены!")
-
+                self.progress_updated.emit(100)  # После всех шагов - 100%
 
         except Exception as e:
-
-            error_msg = f"Critical processing error: {str(e)}"
-
+            error_msg = f"Критическая ошибка: {str(e)}"
             self.log_message.emit(error_msg)
 
-            # Специальная обработка для Access Violation
-
             if "access violation" in str(e).lower() or "0xC0000005" in str(e):
-                self.log_message.emit("Memory access violation detected! This is often caused by:")
-
-                self.log_message.emit("1. Camera driver issues")
-
-                self.log_message.emit("2. Conflicts with other camera applications")
-
-                self.log_message.emit("3. MediaPipe library conflicts")
-
-                self.log_message.emit("Please try restarting the application or your computer.")
-
+                self.log_message.emit("Ошибка с доступом к камере!")
             self.step_completed.emit(False)
-        # finally:
-        #     if self.cancel_requested:
-        #         self.log_message.emit("Обработка отменена пользователем")
 
     def cancel(self):
         """Запрос отмены обработки"""

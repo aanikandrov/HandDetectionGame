@@ -78,7 +78,7 @@ class ProcessingWindow(QDialog):
 
             ("Шаг 3. Обучение модели",
              "Идет обучение модели Random Forest\n"
-             "Это может занять несколько минут..."),
+             "Это может занять некоторое время..."),
 
             ("Завершено!",
              "Обработка данных успешно завершена!\n"
@@ -99,6 +99,7 @@ class ProcessingWindow(QDialog):
             self.start_button.setEnabled(False)
             self.cancel_button.setEnabled(False)
             self.log_text.clear()
+            self.progress_bar.setValue(0)
 
             # Проверяем, не существует ли предыдущий поток
             if hasattr(self, 'processing_thread') and self.processing_thread:
@@ -116,17 +117,11 @@ class ProcessingWindow(QDialog):
             self.processing_thread.step_completed.connect(self.step_completed)
             self.processing_thread.start()
         except Exception as e:
-            error_msg = f"Fatal error in processing window: {str(e)}"
+            error_msg = f"Ошибка в окне обработки: {str(e)}"
             self.log_message.emit(error_msg)
 
             if "access violation" in str(e).lower():
-                self.log_message.emit("Critical memory error detected!")
-                self.log_message.emit("Recommendations:")
-                self.log_message.emit("- Update camera drivers")
-                self.log_message.emit("- Close other camera applications")
-                self.log_message.emit("- Reinstall MediaPipe: pip install --upgrade mediapipe")
-                self.log_message.emit("Попробуйте перезапустить приложение")
-                self.log_message.emit("Если ошибка повторяется, проверьте камеру в других приложениях")
+                self.log_message.emit("Ошибка с доступом к камере")
 
             self.start_button.setEnabled(True)
             self.cancel_button.setEnabled(True)
@@ -144,7 +139,6 @@ class ProcessingWindow(QDialog):
         if success:
             self.current_step += 1
             self.update_step_info()
-            self.progress_bar.setValue(0)
 
             if self.current_step < 4:
                 self.log_message(f"Шаг {self.current_step} успешно завершен!")
