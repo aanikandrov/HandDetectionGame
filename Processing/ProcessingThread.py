@@ -2,6 +2,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from Processing.Processing import collect_data, create_dataset, train_model
 
+
 class ProcessingThread(QThread):
     """ Поток для выполнения обработки данных """
     progress_updated = pyqtSignal(int)
@@ -19,34 +20,34 @@ class ProcessingThread(QThread):
             # Шаг 1: Сбор данных
             if self.start_step <= 0 and not self.cancel_requested:
                 self.log_message.emit("Начало сбора данных...")
-                self.progress_updated.emit(0)  # Начало шага - 0%
+                self.progress_updated.emit(0)
 
                 collect_data()
 
                 self.log_message.emit("Сбор данных завершен!")
-                self.progress_updated.emit(25)  # После шага 1 - 25%
+                self.progress_updated.emit(25)
                 self.step_completed.emit(True)
 
             # Шаг 2: Разметка данных
             if self.start_step <= 1 and not self.cancel_requested:
                 self.log_message.emit("Начало разметки данных...")
-                self.progress_updated.emit(25)  # Начало шага - 25%
+                self.progress_updated.emit(50)
 
                 create_dataset()
 
                 self.log_message.emit("Разметка данных завершена!")
-                self.progress_updated.emit(50)  # После шага 2 - 50%
+                self.progress_updated.emit(75)
                 self.step_completed.emit(True)
 
             # Шаг 3: Обучение модели
             if self.start_step <= 2 and not self.cancel_requested:
                 self.log_message.emit("Начало обучения модели...")
-                self.progress_updated.emit(50)  # Начало шага - 50%
+                self.progress_updated.emit(75)
 
                 train_model()
 
                 self.log_message.emit("Обучение модели завершено!")
-                self.progress_updated.emit(75)  # После шага 3 - 75%
+                self.progress_updated.emit(100)
                 self.step_completed.emit(True)
 
             # Все шаги выполнены
